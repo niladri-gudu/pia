@@ -1,0 +1,47 @@
+name: project-intelligence-agent
+
+# Host ports are configurable so they don't clash with other local services.
+#   POSTGRES_PORT (default 5432), REDIS_PORT (default 6379)
+# Set them if 5432/6379 are already in use, e.g.:
+#   $env:POSTGRES_PORT="5433"; $env:REDIS_PORT="6380"; docker compose up -d
+# and mirror them in DATABASE_URL / REDIS_URL.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: pia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pia}
+      POSTGRES_DB: ${POSTGRES_DB:-pia}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pia} -d ${POSTGRES_DB:-pia}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  redis:
+    image: redis:7-alpine
+    container_name: pia-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  postgres_data:
+  redis_data:

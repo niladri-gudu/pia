@@ -1,0 +1,19 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 10 blocks postinstall scripts of dependencies by default.
+# Allow the build scripts we actually need (Prisma engines, esbuild for tsx,
+# Tailwind's native oxide, sharp for image processing).
+onlyBuiltDependencies:
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "prisma"
+  - "esbuild"
+  - "@tailwindcss/oxide"
+  - "sharp"
+
+# Optional native dependencies whose postinstall we intentionally skip.
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver

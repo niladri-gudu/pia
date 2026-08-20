@@ -1,0 +1,40 @@
+// Docs: https://www.prisma.io/docs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Foundation schema — intentionally minimal.
+//
+// Only a HealthCheck model is defined to verify the database wiring end-to-end.
+//
+// Future models (added in later phases, once their requirements are defined):
+//   User, Workspace, Connection, Project, Document, DocumentChunk,
+//   Conversation, Message, Memory, Evidence, AgentRun, ToolCall, Citation,
+//   SyncJob
+//
+// pgvector strategy (NOT faked here):
+//   Prisma does not natively model a `vector` column type. When vector search
+//   is implemented we will either:
+//     1. Add the column via a raw SQL migration (CREATE EXTENSION IF NOT EXISTS
+//        vector; then ALTER TABLE ... ADD COLUMN embedding vector(1536)) and map
+//        it with Prisma's Unsupported("vector(1536)") type, or
+//     2. Store embeddings in a dedicated table managed by a migration while
+//        keeping the row in Prisma.
+//   The `vector` extension itself is enabled automatically on first container
+//   startup via docker/postgres/init.sql.
+// -----------------------------------------------------------------------------
+
+model HealthCheck {
+  id        String   @id @default(cuid())
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("health_checks")
+}

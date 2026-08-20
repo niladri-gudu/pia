@@ -1,0 +1,35 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# generated
+packages/database/src/generated/
+
+# environment
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.example
+
+# docker
+docker/data/
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,12 @@
+node_modules
+pnpm-lock.yaml
+dist
+.next
+out
+.turbo
+coverage
+*.tsbuildinfo
+packages/database/src/generated
+.env
+.env.*
+!.env.example
