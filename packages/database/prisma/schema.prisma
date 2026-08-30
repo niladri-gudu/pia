@@ -1,12 +1,12 @@
 // Docs: https://www.prisma.io/docs
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -31,10 +31,163 @@ datasource db {
 //   startup via docker/postgres/init.sql.
 // -----------------------------------------------------------------------------
 
+enum ConnectionProvider {
+  GITHUB
+  JIRA
+}
+
+enum ConnectionStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+}
+
+enum DocumentSourceType {
+  GITHUB
+  JIRA
+}
+
+enum DocumentType {
+  ISSUE
+  PULL_REQUEST
+  COMMIT
+  FILE
+  PAGE
+}
+
+enum SyncStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
 model HealthCheck {
   id        String   @id @default(cuid())
-  message   String
+  status    String   @default("ok")
   createdAt DateTime @default(now())
+}
 
-  @@map("health_checks")
+model Workspace {
+  id      String   @id @default(cuid())
+  name        String
+
+  connections Connection[]
+  projects    Project[]
+  documents   Document[]
+  syncJobs    SyncJob[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Connection {
+  id          String             @id @default(cuid())
+  workspaceId String
+
+  provider    ConnectionProvider
+  externalId  String
+  credentials String?
+  status      ConnectionStatus   @default(ACTIVE)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  projects Project[]
+  syncJobs  SyncJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, provider, externalId])
+  @@index([workspaceId])
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  connectionId String
+
+  name         String
+  externalId   String
+  sourceType   DocumentSourceType
+  sourceUrl    String?
+
+  workspace  Workspace  @relation(fields: [workspaceId],references: [id], onDelete: Cascade)
+
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  documents Document[]
+  syncJobs   SyncJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([connectionId, externalId])
+  @@index([workspaceId])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+
+  workspaceId String
+  projectId   String
+
+  sourceType  DocumentSourceType
+  sourceId    String
+  documentType DocumentType
+
+  title       String
+  content     String
+  url         String?
+
+  author      String?
+  occurredAt  DateTime?
+
+  metadata    Json?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sourceType, sourceId, documentType])
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([sourceType])
+  @@index([occurredAt])
+}
+
+model SyncJob {
+  id           String   @id @default(cuid())
+
+  workspaceId  String
+  connectionId String
+  projectId    String?
+
+  provider     ConnectionProvider
+  status       SyncStatus @default(PENDING)
+
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  recordsProcessed Int @default(0)
+
+  error        String?
+  cursor       String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([connectionId])
+  @@index([projectId])
+  @@index([status])
 }

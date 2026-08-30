@@ -1,38 +1,72 @@
-import { z } from "zod";
+import { z } from "zod"
 
-/**
- * Shared, framework-agnostic types and schemas.
- *
- * NOTE: This is the foundation of the shared type surface. As product features
- * are implemented (GitHub/Jira sync, RAG, agents, memory, etc.) the domain
- * types will be expanded here so the web, api and AI packages all agree.
- */
+export const connectionProviderSchema = z.enum([
+  "GITHUB",
+  "JIRA"
+])
 
-// --- Generic API envelope -----------------------------------------------------
+export const connectionStatusSchema = z.enum([
+  "ACTIVE",
+  "INACTIVE",
+  "ERROR",
+])
 
-export const healthResponseSchema = z.object({
-  status: z.literal("ok"),
-  service: z.string(),
-  timestamp: z.string(),
-});
-export type HealthResponse = z.infer<typeof healthResponseSchema>;
+export const documentSourceTypeSchema  = z.enum([
+  "GITHUB",
+  "JIRA",
+])
 
-export const apiErrorResponseSchema = z.object({
-  error: z.string(),
-  message: z.string(),
-  statusCode: z.number(),
-});
-export type ApiErrorResponse = z.infer<typeof apiErrorResponseSchema>;
+export const documentTypeSchema = z.object([
+  "ISSUE",
+  "PULL_REQUEST",
+  "COMMIT",
+  "COMMENT",
+])
 
-export interface Paginated<T> {
-  items: T[];
-  page: number;
-  pageSize: number;
-  total: number;
+export const syncStatusSchema = z.enum([
+  "PENDING",
+  "RUNNING",
+  "COMPLETED",
+  "FAILED",
+])
+
+export type ConnectionProvider = z.infer<
+  typeof connectionProviderSchema
+>;
+
+export type ConnectionStatus = z.infer<
+  typeof connectionStatusSchema
+>;
+
+export type DocumentSourceType = z.infer<
+  typeof documentSourceTypeSchema
+>;
+
+export type DocumentType = z.infer<
+  typeof documentTypeSchema
+>;
+
+export type SyncStatus = z.infer<
+  typeof syncStatusSchema
+>;
+
+export interface NormalizedDocument {
+  sourceType: DocumentSourceType;
+  sourceId: string;
+  documentType: DocumentType;
+
+  title: string;
+  content: string;
+  url?: string;
+
+  author?: string;
+  occurredAt?: Date;
+
+  metadata?: Record<string, unknown>;
 }
 
-// --- Future domain placeholders -----------------------------------------------
-// Intentionally empty for now. These will be expanded in later phases.
-// - User, Workspace, Connection, Project, Document, DocumentChunk
-// - Conversation, Message, Memory, Evidence
-// - AgentRun, ToolCall, Citation, SyncJob
+export interface SyncResult {
+  recordsProcessed: number;
+  documentsCreated: number;
+  documentsUpdated: number;
+}
