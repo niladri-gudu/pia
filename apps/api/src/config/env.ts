@@ -17,6 +17,8 @@ const EnvSchema = z.object({
   LLM_MODEL: z.string().default("deepseek-v4-flash"),
 
   LANGSMITH_TRACING: z.enum(["true", "false"]).default("false"),
+
+  GITHUB_TOKEN: z.string().min(1),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

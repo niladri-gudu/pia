@@ -4,6 +4,7 @@ import { env } from "./config/env.js";
 import { devRouter } from "./modules/dev/dev.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
+import { githubDevRouter } from "./modules/dev/github.routes.js";
 
 export function createApp(): express.Express {
   const app = express();
@@ -26,6 +27,8 @@ export function createApp(): express.Express {
       version: "0.1.0",
     });
   });
+
+  app.use("/dev", githubDevRouter);
 
   app.use("/health", healthRouter);
 
