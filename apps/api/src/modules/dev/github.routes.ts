@@ -44,6 +44,32 @@ router.post("/github/sync/:projectId", async (req, res, next) => {
       return;
     }
 
+    const activeSyncJob = await prisma.syncJob.findFirst({
+      where: {
+        projectId: project.id,
+        provider: "GITHUB",
+        status: {
+          in: ["PENDING", "RUNNING"],
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    if (activeSyncJob) {
+      res.status(409).json({
+        error: "SYNC_IN_PROGRESS",
+        message: "A GitHub synchronization is already in progress for this project",
+        syncJob: {
+          id: activeSyncJob.id,
+          status: activeSyncJob.status,
+        },
+      });
+
+      return;
+    }
+
     const syncJob = await prisma.syncJob.create({
       data: {
         workspaceId: project.workspaceId,

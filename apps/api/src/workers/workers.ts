@@ -18,12 +18,9 @@ export function startGithubSyncWorker(): Worker {
 
       const { projectId, syncJobId } = job.data;
 
-      const syncJob = await prisma.syncJob.findFirst({
+      const syncJob = await prisma.syncJob.findUnique({
         where: {
           id: syncJobId,
-        },
-        orderBy: {
-          createdAt: "desc",
         },
       });
 
@@ -115,8 +112,8 @@ export function startGithubSyncWorker(): Worker {
     },
   );
 
-  githubSyncWorker.on("completed", (job, err) => {
-    console.error(`[worker:github-sync] job ${job?.id} completed`, err);
+  githubSyncWorker.on("completed", (job) => {
+    console.error(`[worker:github-sync] job ${job?.id} completed`);
   });
 
   githubSyncWorker.on("failed", (job, err) => {
