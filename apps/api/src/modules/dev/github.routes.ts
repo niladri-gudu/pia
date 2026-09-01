@@ -4,6 +4,8 @@ import prisma from "@project-intelligence/database";
 
 import { enqueueGithubSyncJob } from "../../workers/queues";
 
+import { indexDocumentChunks } from "../../indexing/document-indexer";
+
 const router: ExpressRouter = Router();
 
 router.post("/github/sync/:projectId", async (req, res, next) => {
@@ -175,5 +177,56 @@ router.get("/github/sync/:projectId/status", async (req, res, next) => {
     next(error);
   }
 });
+
+router.post("/github/index/:projectId", async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+
+    const documents = await prisma.document.findMany({
+      where: {
+        projectId,
+        sourceType: "GITHUB",
+      }
+    })
+
+    if (documents.length === 0) {
+      res.status(404).json({
+        error: "NOT_FOUND",
+        message: "No documents found for this project",
+      })
+
+      return
+    }
+
+    let chunksCreated = 0;
+
+    for (const document of documents) {
+      const chunksCount = await indexDocumentChunks(document.id, {
+        sourceType: document.sourceType,
+        sourceId: document.sourceId,
+        documentType: document.documentType,
+        title: document.title,
+        content: document.content,
+        ...(document.url ? { url: document.url } : {}),
+        ...(document.author ? { author: document.author } : {}),
+        ...(document.occurredAt ? { occurredAt: document.occurredAt } : {}),
+        ...(document.metadata
+          ? { metadata: document.metadata as Record<string, unknown> }
+          : {}),
+      })
+
+      chunksCreated += chunksCount;
+    }
+
+    res.json({
+      success: true,
+      projectId,
+      documentsProcessed: documents.length,
+      chunksCreated,
+    })
+  } catch (error) {
+    next(error)
+  }
+})
 
 export { router as githubDevRouter };

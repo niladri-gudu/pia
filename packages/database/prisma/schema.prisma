@@ -149,6 +149,8 @@ model Document {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  chunks  DocumentChunk[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -157,6 +159,22 @@ model Document {
   @@index([projectId])
   @@index([sourceType])
   @@index([occurredAt])
+}
+
+model DocumentChunk {
+  id          String   @id @default(cuid())
+
+  documentId  String
+  content     String
+  chunkIndex  Int
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([documentId, chunkIndex] )
+  @@index([documentId])
 }
 
 model SyncJob {
