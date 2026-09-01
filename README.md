@@ -99,8 +99,8 @@ Key variables (see `.env.example` for the full list):
 > ```bash
 > $env:POSTGRES_PORT="5433"; $env:REDIS_PORT="6380"; docker compose up -d
 > # .env
-> DATABASE_URL=postgresql://pia:pia@localhost:5433/pia
-> REDIS_URL=redis://localhost:6380
+> DATABASE_URL=postgresql://pia:pia@localhost:5432/pia
+> REDIS_URL=redis://localhost:6379
 > ```
 
 ## 7. Starting Docker infrastructure

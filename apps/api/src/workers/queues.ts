@@ -1,7 +1,23 @@
 import { Queue } from "bullmq";
 import { env } from "../config/env.js";
+import type { GithubSyncJob } from "./jobs/types.js";
 
 let systemQueue: Queue | undefined;
+let githubSyncQueue: Queue<GithubSyncJob> | undefined;
+
+export function getGithubSyncQueue(): Queue<GithubSyncJob> {
+  if (!githubSyncQueue) {
+    githubSyncQueue = new Queue<GithubSyncJob>("github-sync", { connection: redisConnection() });
+  }
+
+  return githubSyncQueue;
+}
+
+export async function enqueueGithubSyncJob(projectId: string, syncJobId: string): Promise<string> {
+  const job = await getGithubSyncQueue().add("github.sync", { projectId, syncJobId });
+
+  return job.id ?? "";
+}
 
 export function redisConnection() {
   const url = new URL(env.REDIS_URL);

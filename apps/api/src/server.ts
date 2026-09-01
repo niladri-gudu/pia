@@ -2,7 +2,12 @@ import { prisma } from "@project-intelligence/database";
 import { env } from "./config/env.js";
 import { createApp } from "./app.js";
 import { closeRedis } from "./lib/redis.js";
-import { startSystemWorker, stopSystemWorker } from "./workers/workers.js";
+import {
+  startGithubSyncWorker,
+  startSystemWorker,
+  stopGithubSyncWorker,
+  stopSystemWorker,
+} from "./workers/workers.js";
 
 const app = createApp();
 
@@ -10,6 +15,7 @@ const app = createApp();
 // API -> Queue -> Redis -> Worker pipeline.
 if (env.NODE_ENV !== "production") {
   startSystemWorker();
+  startGithubSyncWorker();
 }
 
 const server = app.listen(env.API_PORT, () => {
@@ -20,9 +26,12 @@ const server = app.listen(env.API_PORT, () => {
 async function shutdown(signal: string): Promise<void> {
   console.log(`\nReceived ${signal}. Shutting down gracefully...`);
   server.close();
+  
   await stopSystemWorker();
+  await stopGithubSyncWorker();
   await closeRedis();
   await prisma.$disconnect();
+  
   process.exit(0);
 }
 

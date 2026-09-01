@@ -64,6 +64,8 @@ export interface GithubCommit {
   author: GithubUser | null;
 
   commit: {
+    message: string;
+
     author: {
       name: string;
       email: string;

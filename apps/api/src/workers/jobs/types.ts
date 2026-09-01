@@ -2,10 +2,15 @@
  * Background job type names. Expand as real sync jobs (GitHub, Jira, indexing,
  * etc.) are introduced in later phases.
  */
-export type JobName = "system.ping";
+export type JobName = "system.ping" | "github.sync";
 
 export interface SystemPingJob {
   ts: number;
 }
 
-export type JobData = SystemPingJob;
+export interface GithubSyncJob {
+  projectId: string;
+  syncJobId: string;
+}
+
+export type JobData = SystemPingJob | GithubSyncJob;

@@ -1,8 +1,8 @@
 import { Router, type Router as ExpressRouter } from "express";
 
-import { GithubService, createGithubClient } from "../../integrations";
-
 import prisma from "@project-intelligence/database";
+
+import { enqueueGithubSyncJob } from "../../workers/queues";
 
 const router: ExpressRouter = Router();
 
@@ -44,18 +44,87 @@ router.post("/github/sync/:projectId", async (req, res, next) => {
       return;
     }
 
-    const githubClient = createGithubClient();
-
-    const githubService = new GithubService(githubClient);
-
-    const result = await githubService.syncRepository({
-      owner,
-      repository,
-
-      workspaceId: project.workspaceId,
-
-      projectId: project.id,
+    const syncJob = await prisma.syncJob.create({
+      data: {
+        workspaceId: project.workspaceId,
+        connectionId: project.connectionId,
+        projectId: project.id,
+        provider: "GITHUB",
+        status: "PENDING",
+      },
     });
+
+    const queueJobId = await enqueueGithubSyncJob(project.id, syncJob.id);
+
+    res.status(202).json({
+      success: true,
+
+      project: {
+        id: project.id,
+        name: project.name,
+      },
+
+      syncJob: {
+        id: syncJob.id,
+        status: syncJob.status,
+      },
+
+      queueJobId,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/github/sync/:projectId/status", async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        name: true,
+        sourceType: true,
+      },
+    });
+
+    if (!project) {
+      res.status(404).json({
+        error: "NOT_FOUND",
+        message: "Project not found",
+      });
+
+      return;
+    }
+
+    if (project.sourceType !== "GITHUB") {
+      res.status(400).json({
+        error: "INVALID_SOURCE",
+        message: "The selected project is not a GitHub project",
+      });
+
+      return;
+    }
+
+    const syncJob = await prisma.syncJob.findFirst({
+      where: {
+        projectId,
+        provider: "GITHUB",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    if (!syncJob) {
+      res.status(404).json({
+        error: "NOT_FOUND",
+        message: "No GitHub synchronization has been started for this project",
+      });
+
+      return;
+    }
 
     res.json({
       success: true,
@@ -65,11 +134,16 @@ router.post("/github/sync/:projectId", async (req, res, next) => {
         name: project.name,
       },
 
-      recordsProcessed: result.documents.length,
-
-      created: result.created,
-
-      updated: result.updated,
+      syncJob: {
+        id: syncJob.id,
+        status: syncJob.status,
+        startedAt: syncJob.startedAt,
+        completedAt: syncJob.completedAt,
+        recordsProcessed: syncJob.recordsProcessed,
+        error: syncJob.error,
+        createdAt: syncJob.createdAt,
+        updatedAt: syncJob.updatedAt,
+      },
     });
   } catch (error) {
     next(error);
