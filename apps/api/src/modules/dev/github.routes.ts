@@ -1,6 +1,8 @@
 import { Router, type Router as ExpressRouter } from "express";
 import prisma from "@project-intelligence/database";
 import { enqueueGithubSyncJob, enqueueEmbeddingIndexJob } from "../../workers/queues";
+import { createEmbeddingProvider } from "../../indexing/embedding-provider";
+import { VectorRetriever } from "../../retrieval/retriever";
 
 const router: ExpressRouter = Router();
 
@@ -239,5 +241,66 @@ router.post("/github/index/:projectId", async (req, res, next) => {
     next(error)
   }
 })
+
+router.get("/github/search/:projectId", async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const query =
+      typeof req.query.q === "string" ? req.query.q : "";
+
+    if (!query.trim()) {
+      res.status(400).json({
+        error: "INVALID_QUERY",
+        message: "Query parameter 'q' is required",
+      });
+
+      return;
+    }
+
+    const project = await prisma.project.findUnique({
+      where: {
+        id: projectId,
+      },
+    });
+
+    if (!project) {
+      res.status(404).json({
+        error: "NOT_FOUND",
+        message: "Project not found",
+      });
+
+      return;
+    }
+
+    if (project.sourceType !== "GITHUB") {
+      res.status(400).json({
+        error: "INVALID_SOURCE",
+        message: "The selected project is not a GitHub project",
+      });
+
+      return;
+    }
+
+    const embeddingProvider = createEmbeddingProvider();
+    const retriever = new VectorRetriever(embeddingProvider);
+
+    const results = await retriever.retrieve(query, {
+      projectId,
+      topK: 5,
+    });
+
+    res.json({
+      success: true,
+      project: {
+        id: project.id,
+        name: project.name,
+      },
+      query,
+      results,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 export { router as githubDevRouter };
