@@ -5,6 +5,7 @@ import { closeRedis } from "./lib/redis.js";
 import {
   startGithubSyncWorker,
   startSystemWorker,
+  startEmbeddingIndexWorker,
   stopGithubSyncWorker,
   stopSystemWorker,
 } from "./workers/workers.js";
@@ -16,6 +17,7 @@ const app = createApp();
 if (env.NODE_ENV !== "production") {
   startSystemWorker();
   startGithubSyncWorker();
+  startEmbeddingIndexWorker();
 }
 
 const server = app.listen(env.API_PORT, () => {
@@ -26,12 +28,12 @@ const server = app.listen(env.API_PORT, () => {
 async function shutdown(signal: string): Promise<void> {
   console.log(`\nReceived ${signal}. Shutting down gracefully...`);
   server.close();
-  
+
   await stopSystemWorker();
   await stopGithubSyncWorker();
   await closeRedis();
   await prisma.$disconnect();
-  
+
   process.exit(0);
 }
 

@@ -19,6 +19,14 @@ const EnvSchema = z.object({
   LANGSMITH_TRACING: z.enum(["true", "false"]).default("false"),
 
   GITHUB_TOKEN: z.string().min(1),
+
+  GEMINI_API_KEY: z.string().min(1),
+
+  EMBEDDING_PROVIDER: z.enum(["gemini"]).default("gemini"),
+
+  EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
+
+  EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(768),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

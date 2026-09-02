@@ -168,6 +168,8 @@ model DocumentChunk {
   content     String
   chunkIndex  Int
 
+  embedding   Unsupported("vector(768)")?
+
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

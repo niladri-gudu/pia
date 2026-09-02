@@ -1,10 +1,14 @@
+import prisma from "@project-intelligence/database";
 import { Worker } from "bullmq";
 import { redisConnection } from "./queues.js";
 import { GithubService, createGithubClient } from "../integrations/index.js";
-import prisma from "@project-intelligence/database";
+import { createEmbeddingProvider } from "../indexing/embedding-provider.js";
+import { embedDocumentChunks } from "../indexing/embedding-indexer.js";
+import type { EmbeddingIndexJob } from "./jobs/types.js";
 
 let systemWorker: Worker | undefined;
 let githubSyncWorker: Worker | undefined;
+let embeddingIndexWorker: Worker<EmbeddingIndexJob> | undefined;
 
 export function startGithubSyncWorker(): Worker {
   if (githubSyncWorker) return githubSyncWorker;
@@ -147,6 +151,42 @@ export function startSystemWorker(): Worker {
   });
 
   return systemWorker;
+}
+
+export function startEmbeddingIndexWorker(): void {
+  if (embeddingIndexWorker) return;
+
+  embeddingIndexWorker = new Worker<EmbeddingIndexJob>(
+    "embedding-index",
+    async (job) => {
+      console.log(`[embedding-worker] Starting job ${job.id} for project ${job.data.projectId}`,)
+
+      const provider = createEmbeddingProvider();
+
+      const processed = await embedDocumentChunks(
+        provider,
+        job.data.projectId
+      )
+
+      console.log(`[embedding-worker] Completed job ${job.id}. Embedded ${processed} chunks.`,)
+
+      return {
+        processed
+      }
+    },
+    {
+      connection: redisConnection(),
+    }
+  )
+
+  embeddingIndexWorker.on("failed", (job, error) => {
+    console.error(
+      `[embedding-worker] Job ${job?.id ?? "unknown"} failed:`,
+      error,
+    );
+  });
+
+  console.log("[embedding-worker] Started");
 }
 
 export async function stopSystemWorker(): Promise<void> {

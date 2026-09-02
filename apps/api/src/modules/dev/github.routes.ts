@@ -1,10 +1,6 @@
 import { Router, type Router as ExpressRouter } from "express";
-
 import prisma from "@project-intelligence/database";
-
-import { enqueueGithubSyncJob } from "../../workers/queues";
-
-import { indexDocumentChunks } from "../../indexing/document-indexer";
+import { enqueueGithubSyncJob, enqueueEmbeddingIndexJob } from "../../workers/queues";
 
 const router: ExpressRouter = Router();
 
@@ -182,48 +178,63 @@ router.post("/github/index/:projectId", async (req, res, next) => {
   try {
     const { projectId } = req.params;
 
-    const documents = await prisma.document.findMany({
+    const project = await prisma.project.findUnique({
       where: {
-        projectId,
-        sourceType: "GITHUB",
+        id: projectId,
       }
     })
 
-    if (documents.length === 0) {
+    if (!project) {
       res.status(404).json({
         error: "NOT_FOUND",
-        message: "No documents found for this project",
-      })
+        message: "Project not found",
+      });
 
-      return
+      return;
     }
 
-    let chunksCreated = 0;
+    if (project.sourceType !== "GITHUB") {
+      res.status(400).json({
+        error: "INVALID_SOURCE",
+        message: "The selected project is not a GitHub project",
+      });
 
-    for (const document of documents) {
-      const chunksCount = await indexDocumentChunks(document.id, {
-        sourceType: document.sourceType,
-        sourceId: document.sourceId,
-        documentType: document.documentType,
-        title: document.title,
-        content: document.content,
-        ...(document.url ? { url: document.url } : {}),
-        ...(document.author ? { author: document.author } : {}),
-        ...(document.occurredAt ? { occurredAt: document.occurredAt } : {}),
-        ...(document.metadata
-          ? { metadata: document.metadata as Record<string, unknown> }
-          : {}),
-      })
-
-      chunksCreated += chunksCount;
+      return;
     }
 
-    res.json({
+    const chunk = await prisma.documentChunk.findFirst({
+      where: {
+        document: {
+          projectId,
+          sourceType: "GITHUB",
+        },
+      },
+    });
+
+    if (!chunk) {
+      res.status(404).json({
+        error: "NOT_FOUND",
+        message: "No document chunks found for this project",
+      });
+
+      return;
+    }
+
+    const jobId = await enqueueEmbeddingIndexJob(projectId);
+
+    res.status(202).json({
       success: true,
-      projectId,
-      documentsProcessed: documents.length,
-      chunksCreated,
-    })
+
+      project: {
+        id: project.id,
+        name: project.name,
+      },
+
+      indexingJob: {
+        id: jobId,
+        status: "QUEUED",
+      },
+    });
   } catch (error) {
     next(error)
   }
