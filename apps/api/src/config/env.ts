@@ -15,6 +15,7 @@ const EnvSchema = z.object({
 
   LLM_PROVIDER: z.enum(["opencode"]).default("opencode"),
   LLM_MODEL: z.string().default("deepseek-v4-flash"),
+  OPENCODE_API_KEY: z.string().min(1),
 
   LANGSMITH_TRACING: z.enum(["true", "false"]).default("false"),
 

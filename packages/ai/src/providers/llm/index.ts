@@ -2,7 +2,7 @@ import { OpenCodeGoProvider } from "./opencode.js";
 import type { LLMProvider, LLMProviderConfig } from "./types.js";
 
 export * from "./types.js";
-export { OpenCodeGoProvider, ProviderNotImplementedError } from "./opencode.js";
+export { OpenCodeGoProvider } from "./opencode.js";
 
 const PROVIDER_REGISTRY: Record<string, () => LLMProvider> = {
   opencode: () => new OpenCodeGoProvider(),
@@ -31,7 +31,14 @@ export function getProvider(provider: string): LLMProvider {
 export function createLLMFromEnv(
   provider: string,
   model: string,
+  apiKey: string,
 ): ReturnType<LLMProvider["createModel"]> {
-  const config: LLMProviderConfig = { provider, model };
+  const config: LLMProviderConfig = {
+    provider,
+    model,
+    options: {
+      apiKey,
+    },
+  };
   return getProvider(provider).createModel(config);
 }
