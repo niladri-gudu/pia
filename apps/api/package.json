@@ -12,10 +12,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@langchain/langgraph": "^1.4.12",
+    "@project-intelligence/ai": "workspace:*",
     "@project-intelligence/config": "workspace:*",
     "@project-intelligence/database": "workspace:*",
     "@project-intelligence/types": "workspace:*",
-    "@project-intelligence/ai": "workspace:*",
     "bullmq": "^5.81.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",

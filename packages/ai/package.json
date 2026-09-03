@@ -24,6 +24,7 @@
     "@google/genai": "^2.20.0",
     "@langchain/core": "^1.2.9",
     "@langchain/langgraph": "^1.4.12",
+    "@langchain/openai": "^1.5.11",
     "@project-intelligence/types": "workspace:*",
     "langsmith": "^0.9.0",
     "zod": "^4.4.3"

@@ -3,6 +3,7 @@ import prisma from "@project-intelligence/database";
 import { enqueueGithubSyncJob, enqueueEmbeddingIndexJob } from "../../workers/queues";
 import { createEmbeddingProvider } from "../../indexing/embedding-provider";
 import { VectorRetriever } from "../../retrieval/retriever";
+import { agentGraph } from "../../agent/graph";
 
 const router: ExpressRouter = Router();
 
@@ -183,8 +184,8 @@ router.post("/github/index/:projectId", async (req, res, next) => {
     const project = await prisma.project.findUnique({
       where: {
         id: projectId,
-      }
-    })
+      },
+    });
 
     if (!project) {
       res.status(404).json({
@@ -238,15 +239,14 @@ router.post("/github/index/:projectId", async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
-})
+});
 
 router.get("/github/search/:projectId", async (req, res, next) => {
   try {
     const { projectId } = req.params;
-    const query =
-      typeof req.query.q === "string" ? req.query.q : "";
+    const query = typeof req.query.q === "string" ? req.query.q : "";
 
     if (!query.trim()) {
       res.status(400).json({
@@ -297,6 +297,58 @@ router.get("/github/search/:projectId", async (req, res, next) => {
       },
       query,
       results,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/github/agent/:projectId", async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const query = typeof req.query.q === "string" ? req.query.q : "";
+
+    if (!query.trim()) {
+      res.status(400).json({
+        error: "INVALID_QUERY",
+        message: "Query Parameter 'q' is required",
+      });
+      return;
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      res.status(404).json({
+        error: "NOT_FOUND",
+        message: "Project not found",
+      });
+      return;
+    }
+
+    if (project.sourceType !== "GITHUB") {
+      res.status(400).json({
+        error: "INVALID_SOURCE",
+        message: "The selected project is not a GitHub project",
+      });
+      return;
+    }
+
+    const result = await agentGraph.invoke({
+      projectId,
+      query,
+    });
+
+    res.json({
+      success: true,
+      project: {
+        id: project.id,
+        name: project.name,
+      },
+      query,
+      retrievedChunks: result.retrievedChunks,
     });
   } catch (error) {
     next(error);
