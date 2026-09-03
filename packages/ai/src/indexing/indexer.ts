@@ -11,14 +11,26 @@ export interface IndexedChunk {
   content: string;
 }
 
+function buildIndexableContent(document: NormalizedDocument): string {
+  const title = document.title.trim();
+  const content = document.content.trim();
+
+  if (!content) {
+    return title;
+  }
+
+  if (content === title || content.startsWith(`${title}\n`)) {
+    return content;
+  }
+
+  return `${title}\n\n${content}`;
+}
+
 export function indexDocument(
   document: NormalizedDocument,
   options?: ChunkOptions,
 ): IndexedChunk[] {
-  const chunks = chunkText(
-    `${document.title}\n\n${document.content}`,
-    options,
-  );
+  const chunks = chunkText(buildIndexableContent(document), options);
 
   return chunks.map((chunk) => ({
     sourceType: document.sourceType,

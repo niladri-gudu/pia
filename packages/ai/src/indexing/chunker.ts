@@ -11,10 +11,81 @@ export interface ChunkOptions {
 const DEFAULT_CHUNK_SIZE = 1000;
 const DEFAULT_CHUNK_OVERLAP = 200;
 
-export function chunkText(
-  text: string,
-  options: ChunkOptions = {},
-): Chunk[] {
+function splitIntoParagraphs(text: string): string[] {
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+function splitIntoSentences(text: string): string[] {
+  return (
+    text
+      .match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)
+      ?.map((sentence) => sentence.trim())
+      .filter(Boolean) ?? []
+  );
+}
+
+function splitLongText(text: string, chunkSize: number): string[] {
+  const sentences = splitIntoSentences(text);
+
+  if (sentences.length <= 1) {
+    const chunks: string[] = [];
+
+    for (let start = 0; start < text.length; start += chunkSize) {
+      const chunk = text.slice(start, start + chunkSize).trim();
+
+      if (chunk) {
+        chunks.push(chunk);
+      }
+    }
+
+    return chunks;
+  }
+
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const sentence of sentences) {
+    if (sentence.length > chunkSize) {
+      if (current) {
+        chunks.push(current);
+        current = "";
+      }
+
+      for (let start = 0; start < sentence.length; start += chunkSize) {
+        const chunk = sentence.slice(start, start + chunkSize).trim();
+
+        if (chunk) {
+          chunks.push(chunk);
+        }
+      }
+
+      continue;
+    }
+
+    const candidate = current ? `${current} ${sentence}` : sentence;
+
+    if (candidate.length <= chunkSize) {
+      current = candidate;
+    } else {
+      if (current) {
+        chunks.push(current);
+      }
+
+      current = sentence;
+    }
+  }
+
+  if (current) {
+    chunks.push(current);
+  }
+
+  return chunks;
+}
+
+export function chunkText(text: string, options: ChunkOptions = {}): Chunk[] {
   const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
   const chunkOverlap = options.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP;
 
@@ -36,25 +107,37 @@ export function chunkText(
     return [];
   }
 
-  const chunks: Chunk[] = [];
-  const step = chunkSize - chunkOverlap;
+  const paragraphs = splitIntoParagraphs(normalizedText);
+  const chunks: string[] = [];
+  let current = "";
 
-  for (let start = 0; start < normalizedText.length; start += step) {
-    const content = normalizedText.slice(start, start + chunkSize).trim();
+  for (const paragraph of paragraphs) {
+    if (paragraph.length > chunkSize) {
+      if (current) {
+        chunks.push(current);
+        current = "";
+      }
 
-    if (!content) {
+      chunks.push(...splitLongText(paragraph, chunkSize));
       continue;
     }
 
-    chunks.push({
-      content,
-      chunkIndex: chunks.length,
-    });
+    const candidate = current ? `${current}\n\n${paragraph}` : paragraph;
 
-    if (start + chunkSize >= normalizedText.length) {
-      break;
+    if (candidate.length <= chunkSize) {
+      current = candidate;
+    } else {
+      chunks.push(current);
+      current = paragraph;
     }
   }
 
-  return chunks;
+  if (current) {
+    chunks.push(current);
+  }
+
+  return chunks.map((content, chunkIndex) => ({
+    content,
+    chunkIndex,
+  }));
 }
