@@ -348,7 +348,12 @@ router.get("/github/agent/:projectId", async (req, res, next) => {
         name: project.name,
       },
       query,
-      retrievedChunks: result.retrievedChunks,
+      answer: result.answer,
+      sources: result.retrievedChunks.map((chunk) => ({
+        title: chunk.title,
+        url: chunk.url,
+        similarity: chunk.similarity,
+      })),
     });
   } catch (error) {
     next(error);
