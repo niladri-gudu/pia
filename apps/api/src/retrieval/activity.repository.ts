@@ -53,7 +53,7 @@ export async function searchProjectActivity(
 
   const limit = options.limit ?? 50;
 
-  if (limit <= 0) {
+  if (!options.exhaustive && limit <= 0) {
     throw new Error("Activity retrieval limit must be greater than zero");
   }
 
@@ -83,7 +83,7 @@ export async function searchProjectActivity(
             AND (d."metadata"->>'mergedAt')::timestamptz >= ${options.from}
             AND (d."metadata"->>'mergedAt')::timestamptz < ${options.to}
           ORDER BY (d."metadata"->>'mergedAt')::timestamptz DESC
-          LIMIT ${limit}
+          ${options.exhaustive ? Prisma.empty : Prisma.sql`LIMIT ${limit}`}
         `
       : await prisma.$queryRaw<ProjectActivityRow[]>`
           SELECT
@@ -107,7 +107,7 @@ export async function searchProjectActivity(
                 : Prisma.empty
             }
           ORDER BY d."occurredAt" DESC
-          LIMIT ${limit}
+          ${options.exhaustive ? Prisma.empty : Prisma.sql`LIMIT ${limit}`}
         `;
 
   return rows.map((row) => ({

@@ -13,7 +13,7 @@ const AgentStateAnnotation = Annotation.Root({
   projectId: Annotation<string>,
   query: Annotation<string>,
 
-  subQuestions: Annotation<string[]>({
+  subQuestions: Annotation<AgentState["subQuestions"]>({
     reducer: (_, next) => next,
     default: () => [],
   }),

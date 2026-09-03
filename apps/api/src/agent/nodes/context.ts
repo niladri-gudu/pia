@@ -7,6 +7,8 @@ export function buildContextNode(state: AgentState): Partial<AgentState> {
         `Source ${index + 1}`,
         `Title: ${chunk.title}`,
         chunk.url ? `URL: ${chunk.url}` : null,
+        chunk.activityAt ? `Activity date: ${chunk.activityAt.toISOString()}` : null,
+        chunk.activityDateField ? `Activity date field: ${chunk.activityDateField}` : null,
         `Similarity: ${chunk.similarity.toFixed(4)}`,
       ]
         .filter(Boolean)

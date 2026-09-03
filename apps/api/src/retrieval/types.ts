@@ -6,6 +6,8 @@ export interface RetrievedChunk {
   title: string;
   url?: string;
   similarity: number;
+  activityAt?: Date;
+  activityDateField?: "occurredAt" | "mergedAt";
 }
 
 export interface RetrievalOptions {
@@ -14,8 +16,5 @@ export interface RetrievalOptions {
 }
 
 export interface Retriever {
-  retrieve(
-    query: string,
-    options: RetrievalOptions,
-  ): Promise<RetrievedChunk[]>;
+  retrieve(query: string, options: RetrievalOptions): Promise<RetrievedChunk[]>;
 }

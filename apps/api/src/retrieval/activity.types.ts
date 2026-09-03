@@ -24,4 +24,5 @@ export interface ActivityRetrievalOptions {
   dateField?: ActivityDateField;
   documentTypes?: DocumentType[];
   limit?: number;
+  exhaustive?: boolean;
 }

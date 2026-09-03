@@ -8,6 +8,7 @@ export interface ActivityRetrievalRequest {
   dateField?: ActivityDateField;
   documentTypes?: DocumentType[];
   limit?: number;
+  exhaustive?: boolean;
 }
 
 export async function retrieveActivity(
@@ -21,5 +22,6 @@ export async function retrieveActivity(
     dateField: request.dateField,
     documentTypes: request.documentTypes,
     limit: request.limit,
+    exhaustive: request.exhaustive,
   });
 }

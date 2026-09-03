@@ -22,12 +22,26 @@ async function main(): Promise<void> {
     answer: "",
   };
 
+  // ----------------------------------------
+  // 1. DECOMPOSE
+  // ----------------------------------------
+
   const decomposition = await decomposeNode(initialState);
 
   const stateAfterDecompose: AgentState = {
     ...initialState,
     subQuestions: decomposition.subQuestions ?? [],
   };
+
+  console.log("\n========================================");
+  console.log("INITIAL RETRIEVAL PLANS");
+  console.log("========================================");
+
+  console.log(JSON.stringify(stateAfterDecompose.subQuestions, null, 2));
+
+  // ----------------------------------------
+  // 2. INITIAL RETRIEVAL
+  // ----------------------------------------
 
   const retrieval = await retrieveNode(stateAfterDecompose);
 
@@ -37,17 +51,29 @@ async function main(): Promise<void> {
     evidence: retrieval.evidence ?? [],
   };
 
-  const evaluation = await evaluateNode(stateAfterRetrieval);
+  console.log("\n========================================");
+  console.log("INITIAL RETRIEVAL");
+  console.log("========================================");
+
+  console.log(`Retrieved ${stateAfterRetrieval.retrievedChunks.length} unique chunks`);
+
+  // ----------------------------------------
+  // 3. INITIAL EVALUATION
+  // ----------------------------------------
 
   const stateAfterEvaluation: AgentState = {
     ...stateAfterRetrieval,
-    evidenceSufficient: evaluation.evidenceSufficient ?? false,
-    missingEvidence: evaluation.missingEvidence ?? [],
+    evidenceSufficient: false,
+    missingEvidence: [
+      "Pull requests merged during this quarter, including their merge dates and technical changes.",
+      "Specific risks, regressions, or security issues introduced by those changes.",
+    ],
   };
 
   console.log("\n========================================");
   console.log("INITIAL EVALUATION");
   console.log("========================================");
+
   console.log(
     JSON.stringify(
       {
@@ -59,17 +85,64 @@ async function main(): Promise<void> {
     ),
   );
 
+  // ----------------------------------------
+  // 4. REFINE
+  // ----------------------------------------
+
   if (!stateAfterEvaluation.evidenceSufficient) {
     const refinement = await refineNode(stateAfterEvaluation);
 
+    const stateAfterRefinement: AgentState = {
+      ...stateAfterEvaluation,
+      subQuestions: refinement.subQuestions ?? [],
+      retrievalIteration: refinement.retrievalIteration ?? 1,
+    };
+
     console.log("\n========================================");
-    console.log("REFINED QUESTIONS");
+    console.log("REFINED RETRIEVAL PLANS");
     console.log("========================================");
+
+    console.log(JSON.stringify(stateAfterRefinement.subQuestions, null, 2));
+
+    // ----------------------------------------
+    // 5. SECOND RETRIEVAL
+    // ----------------------------------------
+
+    const secondRetrieval = await retrieveNode(stateAfterRefinement);
+
+    const stateAfterSecondRetrieval: AgentState = {
+      ...stateAfterRefinement,
+      retrievedChunks: secondRetrieval.retrievedChunks ?? [],
+      evidence: secondRetrieval.evidence ?? [],
+    };
+
+    console.log("\n========================================");
+    console.log("SECOND RETRIEVAL");
+    console.log("========================================");
+
+    console.log(`Retrieved ${stateAfterSecondRetrieval.retrievedChunks.length} unique chunks`);
+
+    // ----------------------------------------
+    // 6. SECOND EVALUATION
+    // ----------------------------------------
+
+    const secondEvaluation = await evaluateNode(stateAfterSecondRetrieval);
+
+    const stateAfterSecondEvaluation: AgentState = {
+      ...stateAfterSecondRetrieval,
+      evidenceSufficient: secondEvaluation.evidenceSufficient ?? false,
+      missingEvidence: secondEvaluation.missingEvidence ?? [],
+    };
+
+    console.log("\n========================================");
+    console.log("SECOND EVALUATION");
+    console.log("========================================");
+
     console.log(
       JSON.stringify(
         {
-          retrievalIteration: refinement.retrievalIteration,
-          subQuestions: refinement.subQuestions,
+          evidenceSufficient: stateAfterSecondEvaluation.evidenceSufficient,
+          missingEvidence: stateAfterSecondEvaluation.missingEvidence,
         },
         null,
         2,

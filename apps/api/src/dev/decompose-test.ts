@@ -11,7 +11,12 @@ async function main(): Promise<void> {
     const state: AgentState = {
       projectId: "cmtgx0qbc0003lrh8t604v78b",
       query,
-      subQuestions: [],
+      subQuestions: [
+        {
+          question: "some question",
+          strategy: "semantic",
+        },
+      ],
       retrievedChunks: [],
       evidence: [],
       evidenceSufficient: false,

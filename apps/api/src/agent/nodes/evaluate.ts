@@ -21,6 +21,10 @@ Rules:
   "evidenceSufficient": boolean
   "missingEvidence": string[]
 - If evidenceSufficient is true, return an empty missingEvidence array.
+- Retrieval scope describes what the retrieval system actually searched.
+- When "Exhaustive retrieval: true" is provided for an activity query, treat the returned activity evidence as complete for the specified project, date field, and temporal range.
+- Do not claim that activity is missing merely because the returned results begin later than the start of the requested period.
+- Distinguish between "no matching activity was retrieved" and "retrieval failed to cover the requested scope."
 `;
 
 interface EvaluationResult {
@@ -55,23 +59,54 @@ export async function evaluateNode(state: AgentState): Promise<Partial<AgentStat
   const llm = createLLMFromEnv(env.LLM_PROVIDER, env.LLM_MODEL, env.OPENCODE_API_KEY);
 
   const evidenceSections = state.evidence.map((item, index) => {
+    const plan = state.subQuestions[index];
+
+    const retrievalScope = plan
+      ? [
+          `Retrieval strategy: ${plan.strategy}`,
+          plan.activityConstraints?.dateField
+            ? `Activity date field: ${plan.activityConstraints.dateField}`
+            : null,
+          plan.activityConstraints?.temporalRange
+            ? `Temporal range: ${plan.activityConstraints.temporalRange}`
+            : null,
+          plan.activityConstraints?.exhaustive !== undefined
+            ? `Exhaustive retrieval: ${plan.activityConstraints.exhaustive}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : "Retrieval scope unavailable.";
+
     const evidenceText =
       item.chunks.length > 0
         ? item.chunks
-            .map(
-              (chunk, chunkIndex) =>
-                `Evidence ${chunkIndex + 1}:
-Title: ${chunk.title}
-${chunk.content}`,
-            )
+            .map((chunk, chunkIndex) => {
+              const metadata = [
+                `Title: ${chunk.title}`,
+                chunk.url ? `URL: ${chunk.url}` : null,
+                chunk.activityAt ? `Activity date: ${chunk.activityAt.toISOString()}` : null,
+                chunk.activityDateField ? `Activity date field: ${chunk.activityDateField}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n");
+
+              return `Evidence ${chunkIndex + 1}:
+    ${metadata}
+
+    ${chunk.content}`;
+            })
             .join("\n\n")
         : "No evidence retrieved.";
 
     return `Subquestion ${index + 1}:
-${item.subQuestion}
+    ${item.subQuestion}
 
-Retrieved evidence:
-${evidenceText}`;
+    Retrieval scope:
+    ${retrievalScope}
+
+    Retrieved evidence:
+    ${evidenceText}`;
   });
 
   const evidence = evidenceSections.join("\n\n---\n\n");
