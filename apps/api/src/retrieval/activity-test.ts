@@ -20,6 +20,8 @@ async function main() {
       type: item.documentType,
       title: item.title,
       occurredAt: item.occurredAt.toISOString(),
+      activityAt: item.activityAt.toISOString(),
+      activityDateField: item.activityDateField,
       url: item.url,
     });
   }
@@ -38,13 +40,12 @@ async function main() {
   });
 
   for (const item of mergedPrs) {
-    const mergedAt = item.metadata?.mergedAt;
-
     console.log({
       type: item.documentType,
       title: item.title,
       createdAt: item.occurredAt.toISOString(),
-      mergedAt,
+      activityAt: item.activityAt.toISOString(),
+      activityDateField: item.activityDateField,
       url: item.url,
     });
   }

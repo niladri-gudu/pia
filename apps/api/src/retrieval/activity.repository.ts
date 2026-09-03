@@ -18,6 +18,32 @@ interface ProjectActivityRow {
   metadata: unknown;
 }
 
+function getActivityAt(
+  row: ProjectActivityRow,
+  dateField: ActivityRetrievalOptions["dateField"],
+): Date {
+  if (dateField === "mergedAt") {
+    const mergedAt =
+      row.metadata && typeof row.metadata === "object" && "mergedAt" in row.metadata
+        ? row.metadata.mergedAt
+        : null;
+
+    if (typeof mergedAt !== "string") {
+      throw new Error(`Merged activity ${row.id} is missing a valid mergedAt value`);
+    }
+
+    const date = new Date(mergedAt);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new Error(`Merged activity ${row.id} has an invalid mergedAt value`);
+    }
+
+    return date;
+  }
+
+  return row.occurredAt;
+}
+
 export async function searchProjectActivity(
   options: ActivityRetrievalOptions,
 ): Promise<ProjectActivity[]> {
@@ -34,10 +60,10 @@ export async function searchProjectActivity(
   const documentTypeFilter =
     options.documentTypes && options.documentTypes.length > 0 ? options.documentTypes : undefined;
 
-  const dateField = options.dateField ?? "occurredAt";
+  const activityDateField = options.dateField ?? "occurredAt";
 
   const rows =
-    dateField === "mergedAt"
+    activityDateField === "mergedAt"
       ? await prisma.$queryRaw<ProjectActivityRow[]>`
           SELECT
             d."id",
@@ -56,8 +82,8 @@ export async function searchProjectActivity(
             AND d."metadata"->>'mergedAt' IS NOT NULL
             AND (d."metadata"->>'mergedAt')::timestamptz >= ${options.from}
             AND (d."metadata"->>'mergedAt')::timestamptz < ${options.to}
-            ORDER BY (d."metadata"->>'mergedAt')::timestamptz DESC
-            LIMIT ${limit}
+          ORDER BY (d."metadata"->>'mergedAt')::timestamptz DESC
+          LIMIT ${limit}
         `
       : await prisma.$queryRaw<ProjectActivityRow[]>`
           SELECT
@@ -94,6 +120,8 @@ export async function searchProjectActivity(
     ...(row.url ? { url: row.url } : {}),
     ...(row.author ? { author: row.author } : {}),
     occurredAt: row.occurredAt,
+    activityAt: getActivityAt(row, activityDateField),
+    activityDateField,
     metadata:
       row.metadata && typeof row.metadata === "object"
         ? (row.metadata as Record<string, unknown>)

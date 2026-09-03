@@ -12,6 +12,8 @@ export interface ProjectActivity {
   url?: string;
   author?: string;
   occurredAt: Date;
+  activityAt: Date;
+  activityDateField: ActivityDateField;
   metadata: Record<string, unknown> | null;
 }
 
