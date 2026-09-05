@@ -45,10 +45,29 @@ For activity retrieval:
 
 Rules:
 - Return 1-5 retrieval plans.
+- Every retrieval plan MUST contain:
+  - "question": a non-empty string describing the retrieval task.
+  - "strategy": one of "semantic", "activity", or "hybrid".
+- For activity or hybrid plans, include "activity_constraints" when a time constraint is present.
+- For hybrid plans, include "semantic_query".
 - Preserve the user's intent.
 - Keep each question focused enough for retrieval.
 - Do not answer the user's question.
-- Return valid JSON only.`;
+- Return valid JSON only.
+
+Required output shape:
+
+[
+  {
+    "question": "A focused retrieval question",
+    "strategy": "activity",
+    "activity_constraints": {
+      "dateField": "occurredAt",
+      "temporalRange": "last_month",
+      "exhaustive": true
+    }
+  }
+]`;
 
 function parsePlans(content: string): RetrievalPlan[] {
   const parsed: unknown = JSON.parse(content);
@@ -109,7 +128,7 @@ function parsePlans(content: string): RetrievalPlan[] {
               ? plan.query.trim()
               : typeof plan.semantic_query === "string"
                 ? plan.semantic_query.trim()
-                : plan.strategy === "activity" || plan.strategy === "hybrid"
+                : strategy === "activity" || strategy === "hybrid"
                   ? "Project activity during the specified time period"
                   : undefined;
 

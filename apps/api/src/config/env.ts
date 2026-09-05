@@ -18,6 +18,9 @@ const EnvSchema = z.object({
   OPENCODE_API_KEY: z.string().min(1),
 
   LANGSMITH_TRACING: z.enum(["true", "false"]).default("false"),
+  LANGSMITH_API_KEY: z.string().optional(),
+  LANGSMITH_PROJECT: z.string().default("project-intelligence-agent"),
+  LANGSMITH_ENDPOINT: z.string().optional(),
 
   GITHUB_TOKEN: z.string().min(1),
 

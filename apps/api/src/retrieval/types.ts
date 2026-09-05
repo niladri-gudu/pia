@@ -1,20 +1,15 @@
-export interface RetrievedChunk {
-  id: string;
-  documentId: string;
-  content: string;
-  chunkIndex: number;
-  title: string;
-  url?: string;
-  similarity: number;
-  activityAt?: Date;
-  activityDateField?: "occurredAt" | "mergedAt";
-}
+import type { RetrievedChunk } from "@project-intelligence/ai";
 
+export type { RetrievedChunk };
+  
 export interface RetrievalOptions {
   projectId: string;
   topK?: number;
 }
 
 export interface Retriever {
-  retrieve(query: string, options: RetrievalOptions): Promise<RetrievedChunk[]>;
+  retrieve(
+    query: string,
+    options: RetrievalOptions,
+  ): Promise<import("@project-intelligence/ai").RetrievedChunk[]>;
 }

@@ -4,6 +4,8 @@ import { redisConnection } from "./queues.js";
 import { GithubService, createGithubClient } from "../integrations/index.js";
 import { createEmbeddingProvider } from "../indexing/embedding-provider.js";
 import { embedDocumentChunks } from "../indexing/embedding-indexer.js";
+import { chunkProjectDocuments } from "../indexing/document-indexer.js";
+import { enqueueEmbeddingIndexJob } from "./queues.js";
 import type { EmbeddingIndexJob } from "./jobs/types.js";
 
 let systemWorker: Worker | undefined;
@@ -91,6 +93,8 @@ export function startGithubSyncWorker(): Worker {
           },
         });
 
+        await enqueueEmbeddingIndexJob(projectId);
+
         return {
           recordsProcessed: result.documents.length,
           created: result.created,
@@ -160,6 +164,12 @@ export function startEmbeddingIndexWorker(): void {
     "embedding-index",
     async (job) => {
       console.log(`[embedding-worker] Starting job ${job.id} for project ${job.data.projectId}`,)
+
+      const chunked = await chunkProjectDocuments(job.data.projectId);
+
+      console.log(
+        `[embedding-worker] Chunked ${chunked} new chunks for project ${job.data.projectId}`,
+      )
 
       const provider = createEmbeddingProvider();
 

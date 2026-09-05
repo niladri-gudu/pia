@@ -29,7 +29,7 @@ export const connectionStatusSchema = z.enum(["ACTIVE", "INACTIVE", "ERROR"]);
 
 export const documentSourceTypeSchema = z.enum(["GITHUB", "JIRA"]);
 
-export const documentTypeSchema = z.object(["ISSUE", "PULL_REQUEST", "COMMIT", "FILE", "PAGE"]);
+export const documentTypeSchema = z.enum(["ISSUE", "PULL_REQUEST", "COMMIT", "FILE", "PAGE"]);
 
 export const syncStatusSchema = z.enum(["PENDING", "RUNNING", "COMPLETED", "FAILED"]);
 

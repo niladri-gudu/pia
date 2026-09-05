@@ -44,3 +44,37 @@ export function createLangSmithClient(): Client | null {
     apiUrl: config.endpoint,
   });
 }
+
+/**
+ * Explicitly wire LangSmith tracing into LangChain runs.
+ *
+ * LangChain's auto-instrumentation only looks at the legacy LANGCHAIN_* env
+ * vars in some versions, so this aliases the canonical LANGSMITH_* vars onto
+ * them before any LLM call is made. Call once at process startup (after env
+ * validation). Idempotent; no-op when tracing is disabled.
+ */
+export function configureTracingFromEnv(): boolean {
+  const config = getLangSmithConfig();
+
+  if (!config.tracingEnabled) {
+    return false;
+  }
+
+  if (process.env.LANGCHAIN_TRACING_V2 === undefined) {
+    process.env.LANGCHAIN_TRACING_V2 = "true";
+  }
+
+  if (config.apiKey && process.env.LANGCHAIN_API_KEY === undefined) {
+    process.env.LANGCHAIN_API_KEY = config.apiKey;
+  }
+
+  if (config.project && process.env.LANGCHAIN_PROJECT === undefined) {
+    process.env.LANGCHAIN_PROJECT = config.project;
+  }
+
+  if (config.endpoint && process.env.LANGCHAIN_ENDPOINT === undefined) {
+    process.env.LANGCHAIN_ENDPOINT = config.endpoint;
+  }
+
+  return true;
+}

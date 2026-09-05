@@ -1,4 +1,5 @@
 import { prisma } from "@project-intelligence/database";
+import { configureTracingFromEnv } from "@project-intelligence/ai";
 import { env } from "./config/env.js";
 import { createApp } from "./app.js";
 import { closeRedis } from "./lib/redis.js";
@@ -11,6 +12,12 @@ import {
 } from "./workers/workers.js";
 
 const app = createApp();
+
+if (configureTracingFromEnv()) {
+  console.log(
+    `🔍 LangSmith tracing enabled (project: ${env.LANGSMITH_PROJECT})`,
+  );
+}
 
 // Start the dev/system worker in non-production environments to verify the
 // API -> Queue -> Redis -> Worker pipeline.

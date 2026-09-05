@@ -4,10 +4,11 @@ An **agentic RAG platform for software and project intelligence**. It connects t
 GitHub and Jira, synchronizes project data, and eventually answers questions
 with evidence-backed, cited answers through LangGraph agent workflows.
 
-> ⚠️ **Status: Foundation only.** This repository currently contains a clean,
-> scalable monorepo skeleton with verified local infrastructure. No product
-> features (GitHub/Jira sync, RAG, agents, MCP tools, memory, authentication,
-> or the UI) are implemented yet. See [Project status](#project-status).
+> ⚠️ **Status: development (Phases 1–5 of the roadmap done).** GitHub ingestion,
+> background sync (BullMQ), chunking + pgvector embeddings, semantic/temporal
+> retrieval, and a LangGraph agent are implemented behind dev API routes.
+> Still missing: product UI, Jira, MCP tools, memory, authentication, and
+> production hardening. See [Project status](#project-status).
 
 ---
 
@@ -192,21 +193,30 @@ pnpm build        # builds all workspaces
 - PostgreSQL (pgvector) + Redis via Docker Compose
 - Prisma package with a minimal `HealthCheck` model and migrations
 - Redis client + BullMQ `system` queue/worker (dev verification path)
-- AI package with provider abstraction, LangGraph/LangSmith placeholders
+- AI package with provider abstraction, LangGraph/LangSmith support
 - Root `.env.example`, README, `.gitignore`
 
 **Intentionally NOT implemented yet:**
 
-- GitHub / Jira sync & integrations
-- RAG / pgvector vector search
-- LangGraph agent workflows
+- Jira sync & integrations
+- Product UI / dashboard (agent is reachable via dev API routes only)
 - MCP tools
 - Memory (short/long term)
-- LangSmith live tracing (disabled by default)
 - Authentication
-- Product UI / dashboard
 - Production Docker images for web/api
-- Real background jobs (only the test `system` queue exists)
+- Structured citation/evidence models
+
+**Implemented since the foundation:**
+
+- GitHub sync (dev token): client, mappers, idempotent persistence
+- Background sync: BullMQ `github-sync` queue + worker with full SyncJob state machine
+- Chunking (packages/ai) + Gemini embeddings into pgvector `DocumentChunk`
+- Semantic retrieval (cosine KNN) + activity/temporal retrieval
+- LangGraph agent (decompose → retrieve → evaluate → refine → generate) exposed at
+  `GET /dev/github/agent/:projectId`
+- OpenCode Go LLM provider (real ChatOpenAI-based adapter)
+- LangSmith tracing via `configureTracingFromEnv()` (enable with
+  `LANGSMITH_TRACING=true` + `LANGSMITH_API_KEY`)
 
 ## 14. Planned future architecture
 
@@ -243,7 +253,5 @@ pnpm build        # builds all workspaces
 
 The app is decoupled from any single provider. `packages/ai/src/providers/llm`
 defines an `LLMProvider` abstraction that returns a LangChain `BaseChatModel`.
-The OpenCode Go adapter is a **clearly marked placeholder** that throws until
-the provider's real API/SDK/auth contract is confirmed — no fake integration is
-shipped. Add the provider's required environment variables to `.env.example`
-once known.
+The OpenCode Go adapter wraps `ChatOpenAI` against the OpenCode Go endpoint and
+requires `OPENCODE_API_KEY`.
