@@ -3,11 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  askProjectAgent,
   fetchProject,
   fetchProjectSyncStatus,
   fetchProjects,
+  searchProject,
   startProjectSync,
-  askProjectAgent,
 } from "@/lib/api";
 
 export function useProjects() {
@@ -62,5 +63,13 @@ export function useStartProjectSync(projectId: string) {
 export function useAskProjectAgent(projectId: string) {
   return useMutation({
     mutationFn: (question: string) => askProjectAgent(projectId, question),
+  });
+}
+
+export function useProjectSearch(projectId: string, query: string) {
+  return useQuery({
+    queryKey: ["projects", projectId, "search", query],
+    queryFn: () => searchProject(projectId, query),
+    enabled: Boolean(projectId && query.trim()),
   });
 }

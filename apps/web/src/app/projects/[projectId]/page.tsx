@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProject, useProjectSyncStatus, useStartProjectSync } from "@/hooks/use-projects";
 import { Button } from "@/components/ui/button";
 import { ProjectChat } from "@/components/project-chat";
+import { ProjectSearch } from "@/components/project-search";
 
 export default function ProjectPage() {
   const params = useParams<{ projectId: string }>();
@@ -86,7 +87,6 @@ export default function ProjectPage() {
           )}
         </div>
       </div>
-
       <section className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
@@ -128,8 +128,10 @@ export default function ProjectPage() {
           </CardContent>
         </Card>
       </section>
-
-      <ProjectChat projectId={projectId} />
+      <div className="space-y-6">
+        <ProjectChat projectId={projectId} />
+        <ProjectSearch projectId={projectId} />
+      </div>{" "}
     </main>
   );
 }
