@@ -1,6 +1,7 @@
 import { createLLMFromEnv } from "@project-intelligence/ai";
 import type { AgentState, RetrievalPlan } from "../state";
 import { env } from "../../config/env";
+import { invokeJson } from "../llm-json";
 
 const SYSTEM_PROMPT = `You are the retrieval refinement component of Project Intelligence Agent.
 
@@ -32,18 +33,21 @@ Rules:
 - Do not invent project-specific facts.
 - Avoid repeating existing retrieval plans unless the missing evidence requires a more specific version.
 - Return ONLY valid JSON.
+- Return RAW valid JSON only.
+- Do not use markdown code fences.
+- Do not include explanations or any text before or after the JSON.
 - Return between 1 and 5 retrieval plans.
 
 Return this structure:
 
 [
   {
-    "strategy": "activity | semantic | hybrid",
+    "strategy": "activity",
     "query": "focused retrieval task",
     "activity_constraints": {
-      "dateField": "occurredAt | mergedAt",
-      "temporalRange": "this_quarter | last_quarter | this_month | last_month | this_week | last_week | today | yesterday | this_year | last_year | custom"
-      "exhaustive": true | false
+      "dateField": "occurredAt",
+      "temporalRange": "this_quarter",
+      "exhaustive": true
     },
     "semantic_query": "optional semantic search query"
   }
@@ -52,9 +56,7 @@ Return this structure:
 For activity or hybrid plans, preserve the relevant temporal constraints from the original plans when the missing evidence is time-bounded.
 `;
 
-function parseRefinedPlans(content: string): RetrievalPlan[] {
-  const parsed: unknown = JSON.parse(content);
-
+function parseRefinedPlans(parsed: unknown): RetrievalPlan[] {
   if (!Array.isArray(parsed)) {
     throw new Error("LLM refinement response must be an array.");
   }
@@ -176,12 +178,12 @@ ${state.missingEvidence.map((item, index) => `${index + 1}. ${item}`).join("\n")
 
 Create targeted retrieval questions for the missing evidence.`;
 
-  const response = await llm.invoke(prompt);
-
-  const content =
-    typeof response.content === "string" ? response.content : JSON.stringify(response.content);
-
-  const refinedPlans = parseRefinedPlans(content);
+  const refinedPlans = await invokeJson({
+    llm,
+    prompt,
+    parse: parseRefinedPlans,
+    label: "refinement",
+  });
 
   console.log(
     `[agent] Generated ${refinedPlans.length} refined retrieval plans: ${refinedPlans

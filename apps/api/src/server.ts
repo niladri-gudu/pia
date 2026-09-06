@@ -9,6 +9,7 @@ import {
   startEmbeddingIndexWorker,
   stopGithubSyncWorker,
   stopSystemWorker,
+  stopEmbeddingIndexWorker,
 } from "./workers/workers.js";
 
 const app = createApp();
@@ -38,6 +39,7 @@ async function shutdown(signal: string): Promise<void> {
 
   await stopSystemWorker();
   await stopGithubSyncWorker();
+  await stopEmbeddingIndexWorker();
   await closeRedis();
   await prisma.$disconnect();
 

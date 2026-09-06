@@ -121,7 +121,7 @@ export function startGithubSyncWorker(): Worker {
   );
 
   githubSyncWorker.on("completed", (job) => {
-    console.error(`[worker:github-sync] job ${job?.id} completed`);
+    console.log(`[worker:github-sync] job ${job?.id} completed`);
   });
 
   githubSyncWorker.on("failed", (job, err) => {
@@ -210,5 +210,12 @@ export async function stopGithubSyncWorker(): Promise<void> {
   if (githubSyncWorker) {
     await githubSyncWorker.close();
     githubSyncWorker = undefined;
+  }
+}
+
+export async function stopEmbeddingIndexWorker(): Promise<void> {
+  if (embeddingIndexWorker) {
+    await embeddingIndexWorker.close();
+    embeddingIndexWorker = undefined;
   }
 }

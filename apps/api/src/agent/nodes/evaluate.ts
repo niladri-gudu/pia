@@ -1,6 +1,7 @@
 import { createLLMFromEnv } from "@project-intelligence/ai";
 import type { AgentState } from "../state";
 import { env } from "../../config/env";
+import { invokeJson } from "../llm-json";
 
 const SYSTEM_PROMPT = `You are the evidence evaluation component of Project Intelligence Agent.
 
@@ -25,6 +26,9 @@ Rules:
 - When "Exhaustive retrieval: true" is provided for an activity query, treat the returned activity evidence as complete for the specified project, date field, and temporal range.
 - Do not claim that activity is missing merely because the returned results begin later than the start of the requested period.
 - Distinguish between "no matching activity was retrieved" and "retrieval failed to cover the requested scope."
+- Return RAW valid JSON only.
+- Do not use markdown code fences.
+- Do not include explanations or any text before or after the JSON.
 `;
 
 interface EvaluationResult {
@@ -32,9 +36,7 @@ interface EvaluationResult {
   missingEvidence: string[];
 }
 
-function parseEvaluation(content: string): EvaluationResult {
-  const parsed: unknown = JSON.parse(content);
-
+function parseEvaluation(parsed: unknown): EvaluationResult {
   if (
     typeof parsed !== "object" ||
     parsed === null ||
@@ -121,12 +123,12 @@ SUBQUESTIONS AND EVIDENCE:
 
 ${evidence}`;
 
-  const response = await llm.invoke(prompt);
-
-  const content =
-    typeof response.content === "string" ? response.content : JSON.stringify(response.content);
-
-  const evaluation = parseEvaluation(content);
+  const evaluation = await invokeJson({
+    llm,
+    prompt,
+    parse: parseEvaluation,
+    label: "evaluation",
+  });
 
   console.log(`[agent] Evidence sufficient: ${evaluation.evidenceSufficient}`);
 

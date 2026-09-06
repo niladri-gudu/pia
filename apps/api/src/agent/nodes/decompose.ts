@@ -1,6 +1,7 @@
 import { createLLMFromEnv } from "@project-intelligence/ai";
 import { env } from "../../config/env";
 import type { AgentState, RetrievalPlan } from "../state";
+import { invokeJson } from "../llm-json";
 
 const SYSTEM_PROMPT = `You are the planning component of Project Intelligence Agent.
 
@@ -53,7 +54,9 @@ Rules:
 - Preserve the user's intent.
 - Keep each question focused enough for retrieval.
 - Do not answer the user's question.
-- Return valid JSON only.
+- Return RAW valid JSON only.
+- Do not use markdown code fences.
+- Do not include explanations or any text before or after the JSON.
 
 Required output shape:
 
@@ -69,9 +72,7 @@ Required output shape:
   }
 ]`;
 
-function parsePlans(content: string): RetrievalPlan[] {
-  const parsed: unknown = JSON.parse(content);
-
+function parsePlans(parsed: unknown): RetrievalPlan[] {
   if (!parsed || typeof parsed !== "object") {
     throw new Error("Decomposition result must be an object");
   }
@@ -203,28 +204,26 @@ USER QUESTION:
 
 ${state.query}`;
 
-  const response = await llm.invoke(prompt);
+  const plans = await invokeJson({
+    llm,
+    prompt,
+    parse: parsePlans,
+    label: "decomposition",
+  });
 
-  const content =
-    typeof response.content === "string" ? response.content : JSON.stringify(response.content);
-
-  console.log("\n[agent] Raw decomposition response:");
-  console.log(content);
-  console.log();
-
-  const plans = parsePlans(content);
-
-  if (plans.length === 0 || plans.length > 5) {
-    throw new Error("Decomposition must return between 1 and 5 plans");
+  if (plans.length === 0) {
+    throw new Error("Decomposition returned no plans");
   }
 
+  const trimmedPlans = plans.slice(0, 5);
+
   console.log(
-    `[agent] Created ${plans.length} retrieval plans: ${plans
+    `[agent] Created ${trimmedPlans.length} retrieval plans: ${trimmedPlans
       .map((plan) => plan.strategy)
       .join(", ")}`,
   );
 
   return {
-    subQuestions: plans,
+    subQuestions: trimmedPlans,
   };
 }
