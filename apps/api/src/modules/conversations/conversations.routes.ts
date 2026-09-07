@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import {
+  getProjectConversations,
   getConversationMessages,
   sendConversationMessage,
   startConversation,
@@ -31,6 +32,23 @@ conversationsRouter.post("/", async (req, res, next) => {
     });
 
     res.status(201).json(conversation);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /conversations/project/:projectId
+ *
+ * Get all conversations belonging to a project.
+ */
+conversationsRouter.get("/project/:projectId", async (req, res, next) => {
+  try {
+    const conversations = await getProjectConversations(req.params.projectId);
+
+    res.json({
+      data: conversations,
+    });
   } catch (error) {
     next(error);
   }

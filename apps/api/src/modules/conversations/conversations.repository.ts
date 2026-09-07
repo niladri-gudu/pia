@@ -20,6 +20,27 @@ export async function createConversation(input: { projectId: string; title?: str
 }
 
 /**
+ * Find all conversations belonging to a project.
+ */
+export async function findProjectConversations(projectId: string) {
+  return prisma.conversation.findMany({
+    where: {
+      projectId,
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+    select: {
+      id: true,
+      projectId: true,
+      title: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+}
+
+/**
  * Find a conversation by id.
  */
 export async function findConversationById(conversationId: string) {

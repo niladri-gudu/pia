@@ -7,6 +7,7 @@ import {
   createConversation,
   fetchConversationMessages,
   fetchProject,
+  fetchProjectConversations,
   fetchProjectSyncStatus,
   fetchProjects,
   searchProject,
@@ -111,5 +112,12 @@ export function useSendConversationMessage(conversationId: string | null) {
         queryKey: ["conversations", conversationId, "messages"],
       });
     },
+  });
+}
+
+export function useProjectConversations(projectId: string) {
+  return useQuery({
+    queryKey: ["conversations", projectId],
+    queryFn: () => fetchProjectConversations(projectId),
   });
 }

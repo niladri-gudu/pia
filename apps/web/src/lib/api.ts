@@ -252,3 +252,19 @@ export async function sendConversationMessage(
 
   return (await res.json()) as SendConversationMessageResponse;
 }
+
+export async function fetchProjectConversations(projectId: string): Promise<Conversation[]> {
+  const res = await fetch(`${API_BASE_URL}/conversations/project/${projectId}`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch project conversations: ${res.status}`);
+  }
+
+  const data = (await res.json()) as {
+    data: Conversation[];
+  };
+
+  return data.data;
+}

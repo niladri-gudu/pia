@@ -5,6 +5,7 @@ import {
   createMessage,
   findConversationById,
   findConversationMessages,
+  findProjectConversations,
 } from "./conversations.repository";
 
 /**
@@ -12,6 +13,13 @@ import {
  */
 export async function startConversation(input: { projectId: string; title?: string }) {
   return createConversation(input);
+}
+
+/**
+ * Return all conversations belonging to a project.
+ */
+export async function getProjectConversations(projectId: string) {
+  return findProjectConversations(projectId);
 }
 
 /**
