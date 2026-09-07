@@ -20,6 +20,24 @@ export async function createConversation(input: { projectId: string; title?: str
 }
 
 /**
+ * Update the title of a conversation.
+ */
+export async function updateConversationTitle(conversationId: string, title: string) {
+  return prisma.conversation.update({
+    where: {
+      id: conversationId,
+    },
+    data: {
+      title,
+    },
+    select: {
+      id: true,
+      title: true,
+    },
+  });
+}
+
+/**
  * Find all conversations belonging to a project.
  */
 export async function findProjectConversations(projectId: string) {
