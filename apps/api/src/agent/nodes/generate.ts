@@ -20,7 +20,12 @@ Rules:
 `;
 
 export async function generateNode(state: AgentState): Promise<Partial<AgentState>> {
-  const llm = createLLMFromEnv(env.LLM_PROVIDER, env.LLM_MODEL, env.OPENCODE_API_KEY);
+  const llm = createLLMFromEnv(
+    env.LLM_PROVIDER,
+    env.LLM_MODEL,
+    env.OPENCODE_API_KEY,
+    state.conversationId,
+  );
 
   const evidenceStatus = state.evidenceSufficient ? "SUFFICIENT" : "INSUFFICIENT";
 
@@ -51,9 +56,18 @@ export async function generateNode(state: AgentState): Promise<Partial<AgentStat
     })
     .join("\n\n");
 
+  const conversationHistory =
+    state.conversationHistory && state.conversationHistory.length > 0
+      ? state.conversationHistory.map((message) => `${message.role}: ${message.content}`).join("\n")
+      : "No previous conversation.";
+
   const prompt = `${SYSTEM_PROMPT}
 
-EVIDENCE STATUS:
+  CONVERSATION HISTORY:
+
+  ${conversationHistory}
+
+  EVIDENCE STATUS:
 
 ${evidenceStatus}
 

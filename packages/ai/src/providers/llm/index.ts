@@ -32,13 +32,16 @@ export function createLLMFromEnv(
   provider: string,
   model: string,
   apiKey: string,
+  sessionId?: string,
 ): ReturnType<LLMProvider["createModel"]> {
   const config: LLMProviderConfig = {
     provider,
     model,
     options: {
       apiKey,
+      ...(sessionId ? { sessionId } : {}),
     },
   };
+
   return getProvider(provider).createModel(config);
 }

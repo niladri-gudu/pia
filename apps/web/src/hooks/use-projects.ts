@@ -4,10 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   askProjectAgent,
+  createConversation,
+  fetchConversationMessages,
   fetchProject,
   fetchProjectSyncStatus,
   fetchProjects,
   searchProject,
+  sendConversationMessage,
   startProjectSync,
 } from "@/lib/api";
 
@@ -71,5 +74,42 @@ export function useProjectSearch(projectId: string, query: string) {
     queryKey: ["projects", projectId, "search", query],
     queryFn: () => searchProject(projectId, query),
     enabled: Boolean(projectId && query.trim()),
+  });
+}
+
+export function useCreateConversation(projectId: string) {
+  return useMutation({
+    mutationFn: (title?: string) => createConversation(projectId, title),
+  });
+}
+
+export function useConversationMessages(conversationId: string | null) {
+  return useQuery({
+    queryKey: ["conversations", conversationId, "messages"],
+    queryFn: () => fetchConversationMessages(conversationId!),
+    enabled: Boolean(conversationId),
+  });
+}
+
+export function useSendConversationMessage(conversationId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (content: string) => {
+      if (!conversationId) {
+        throw new Error("Conversation ID is required");
+      }
+
+      return sendConversationMessage(conversationId, content);
+    },
+    onSuccess: () => {
+      if (!conversationId) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: ["conversations", conversationId, "messages"],
+      });
+    },
   });
 }

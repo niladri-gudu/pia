@@ -6,6 +6,7 @@ import { healthRouter } from "./modules/health/health.routes.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 import { githubDevRouter } from "./modules/dev/github.routes.js";
+import { conversationsRouter } from "./modules/conversations/conversations.routes";
 
 export function createApp(): express.Express {
   const app = express();
@@ -34,6 +35,8 @@ export function createApp(): express.Express {
   app.use("/health", healthRouter);
 
   app.use("/projects", projectsRouter);
+
+  app.use("/conversations", conversationsRouter);
 
   if (env.NODE_ENV !== "production") {
     app.use("/dev", devRouter);

@@ -1,72 +1,72 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useAskProjectAgent } from "@/hooks/use-projects";
+import {
+  useConversationMessages,
+  useCreateConversation,
+  useSendConversationMessage,
+} from "@/hooks/use-projects";
 
 interface ProjectChatProps {
   projectId: string;
 }
 
-interface UserMessage {
+interface ChatMessage {
   id: string;
-  role: "user";
+  role: "USER" | "ASSISTANT";
   content: string;
+  sources:
+    | {
+        title: string;
+        url: string | null;
+        similarity: number;
+      }[]
+    | null;
+  createdAt: string;
 }
-
-interface AssistantMessage {
-  id: string;
-  role: "assistant";
-  content: string;
-  sources: {
-    title: string;
-    url: string | null;
-    similarity: number;
-  }[];
-}
-
-type ChatMessage = UserMessage | AssistantMessage;
 
 export function ProjectChat({ projectId }: ProjectChatProps) {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
-  const askAgent = useAskProjectAgent(projectId);
+  const createConversationMutation = useCreateConversation(projectId);
+
+  const messagesQuery = useConversationMessages(conversationId);
+
+  const sendMessageMutation = useSendConversationMessage(conversationId);
+
+  useEffect(() => {
+    createConversationMutation.mutate("Project chat", {
+      onSuccess: (conversation) => {
+        setConversationId(conversation.id);
+      },
+    });
+  }, []);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const trimmedQuestion = question.trim();
 
-    if (!trimmedQuestion || askAgent.isPending) {
+    if (!trimmedQuestion || sendMessageMutation.isPending || !conversationId) {
       return;
     }
 
-    const userMessage: UserMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: trimmedQuestion,
-    };
-
-    setMessages((current) => [...current, userMessage]);
     setQuestion("");
 
-    askAgent.mutate(trimmedQuestion, {
-      onSuccess: (response) => {
-        const assistantMessage: AssistantMessage = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: response.answer,
-          sources: response.sources,
-        };
-
-        setMessages((current) => [...current, assistantMessage]);
-      },
-    });
+    sendMessageMutation.mutate(trimmedQuestion);
   }
+
+  const messages: ChatMessage[] = messagesQuery.data ?? [];
+
+  const isLoading =
+    createConversationMutation.isPending ||
+    messagesQuery.isLoading ||
+    sendMessageMutation.isPending;
 
   return (
     <Card>
@@ -76,7 +76,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
 
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          {messages.length === 0 && (
+          {messages.length === 0 && !isLoading && (
             <p className="text-sm text-muted-foreground">
               Ask a question about the project&apos;s code, issues, pull requests, commits, or
               activity.
@@ -84,7 +84,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
           )}
 
           {messages.map((message) => {
-            if (message.role === "user") {
+            if (message.role === "USER") {
               return (
                 <div
                   key={message.id}
@@ -101,7 +101,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                   <p className="whitespace-pre-wrap text-sm leading-6">{message.content}</p>
                 </div>
 
-                {message.sources.length > 0 && (
+                {message.sources && message.sources.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Sources</p>
 
@@ -131,16 +131,16 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             );
           })}
 
-          {askAgent.isPending && (
+          {sendMessageMutation.isPending && (
             <div className="max-w-[90%] rounded-lg bg-muted p-4">
               <p className="text-sm text-muted-foreground">Thinking...</p>
             </div>
           )}
 
-          {askAgent.isError && (
-            <p className="text-sm text-destructive">
-              Failed to get an answer: {askAgent.error.message}
-            </p>
+          {(createConversationMutation.isError ||
+            messagesQuery.isError ||
+            sendMessageMutation.isError) && (
+            <p className="text-sm text-destructive">Failed to load the conversation.</p>
           )}
         </div>
 
@@ -149,11 +149,11 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             placeholder="Ask something about this project..."
-            disabled={askAgent.isPending}
+            disabled={isLoading || !conversationId}
           />
 
-          <Button type="submit" disabled={!question.trim() || askAgent.isPending}>
-            {askAgent.isPending ? "Thinking..." : "Ask"}
+          <Button type="submit" disabled={!question.trim() || isLoading || !conversationId}>
+            {sendMessageMutation.isPending ? "Thinking..." : "Ask"}
           </Button>
         </form>
       </CardContent>

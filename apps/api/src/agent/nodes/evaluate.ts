@@ -58,7 +58,12 @@ function parseEvaluation(parsed: unknown): EvaluationResult {
 }
 
 export async function evaluateNode(state: AgentState): Promise<Partial<AgentState>> {
-  const llm = createLLMFromEnv(env.LLM_PROVIDER, env.LLM_MODEL, env.OPENCODE_API_KEY);
+  const llm = createLLMFromEnv(
+    env.LLM_PROVIDER,
+    env.LLM_MODEL,
+    env.OPENCODE_API_KEY,
+    state.conversationId,
+  );
 
   const evidenceSections = state.evidence.map((item, index) => {
     const plan = state.subQuestions[index];

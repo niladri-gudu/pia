@@ -160,8 +160,13 @@ function parseRefinedPlans(parsed: unknown): RetrievalPlan[] {
 }
 
 export async function refineNode(state: AgentState): Promise<Partial<AgentState>> {
-  const llm = createLLMFromEnv(env.LLM_PROVIDER, env.LLM_MODEL, env.OPENCODE_API_KEY);
-
+  const llm = createLLMFromEnv(
+    env.LLM_PROVIDER,
+    env.LLM_MODEL,
+    env.OPENCODE_API_KEY,
+    state.conversationId,
+  );
+  
   const prompt = `${SYSTEM_PROMPT}
 
 ORIGINAL USER QUESTION:

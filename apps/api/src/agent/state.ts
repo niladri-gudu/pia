@@ -17,6 +17,11 @@ export type TemporalRange =
   | "last_year"
   | "custom";
 
+export interface ConversationHistoryMessage {
+  role: "USER" | "ASSISTANT";
+  content: string;
+}
+
 export interface ActivityConstraints {
   dateField?: ActivityDateField;
   temporalRange?: TemporalRange;
@@ -45,7 +50,9 @@ export interface RetrievedEvidence {
 
 export interface AgentState {
   projectId: string;
+  conversationId?: string;
   query: string;
+  conversationHistory?: ConversationHistoryMessage[];
   subQuestions: RetrievalPlan[];
   retrievedChunks: RetrievedChunk[];
   evidence: RetrievedEvidence[];

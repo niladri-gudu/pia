@@ -7,6 +7,7 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -30,6 +31,11 @@ datasource db {
 //   The `vector` extension itself is enabled automatically on first container
 //   startup via docker/postgres/init.sql.
 // -----------------------------------------------------------------------------
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
 
 enum ConnectionProvider {
   GITHUB
@@ -118,6 +124,8 @@ model Project {
 
   documents Document[]
   syncJobs   SyncJob[]
+
+  conversations Conversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -210,4 +218,35 @@ model SyncJob {
   @@index([connectionId])
   @@index([projectId])
   @@index([status])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String?
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([updatedAt])
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  role           MessageRole
+  content        String
+  sources        Json?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
 }

@@ -63,6 +63,39 @@ export interface ProjectSearchResponse {
   results: SearchResult[];
 }
 
+export interface Conversation {
+  id: string;
+  projectId: string;
+  title: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationSource {
+  title: string;
+  url: string | null;
+  similarity: number;
+}
+
+export interface ConversationMessage {
+  id: string;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  sources: ConversationSource[] | null;
+  createdAt: string;
+}
+
+export interface ConversationMessagesResponse {
+  data: ConversationMessage[];
+}
+
+export interface SendConversationMessageResponse {
+  userMessage: {
+    content: string;
+  };
+  assistantMessage: ConversationMessage;
+}
+
 export async function fetchHealth(): Promise<HealthResponse> {
   const res = await fetch(`${API_BASE_URL}/health`, {
     cache: "no-store",
@@ -162,4 +195,60 @@ export async function searchProject(
   }
 
   return (await res.json()) as ProjectSearchResponse;
+}
+
+export async function createConversation(projectId: string, title?: string): Promise<Conversation> {
+  const res = await fetch(`${API_BASE_URL}/conversations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      projectId,
+      title,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to create conversation: ${res.status}`);
+  }
+
+  return (await res.json()) as Conversation;
+}
+
+export async function fetchConversationMessages(
+  conversationId: string,
+): Promise<ConversationMessage[]> {
+  const res = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch conversation messages: ${res.status}`);
+  }
+
+  const data = (await res.json()) as ConversationMessagesResponse;
+
+  return data.data;
+}
+
+export async function sendConversationMessage(
+  conversationId: string,
+  content: string,
+): Promise<SendConversationMessageResponse> {
+  const res = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      content,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to send conversation message: ${res.status}`);
+  }
+
+  return (await res.json()) as SendConversationMessageResponse;
 }

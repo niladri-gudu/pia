@@ -17,11 +17,20 @@ export class OpenCodeGoProvider implements LLMProvider {
       throw new Error("OpenCode Go API key is required in the LLM provider configuration.");
     }
 
+    const sessionId = config.options?.sessionId;
+
+    if (typeof sessionId !== "string" || !sessionId.trim()) {
+      throw new Error("OpenCode Go session ID is required in the LLM provider configuration.");
+    }
+
     return new ChatOpenAI({
       model: config.model,
       apiKey,
       configuration: {
         baseURL: OPENCODE_GO_BASE_URL,
+        defaultHeaders: {
+          "x-opencode-session": sessionId,
+        },
       },
     });
   }

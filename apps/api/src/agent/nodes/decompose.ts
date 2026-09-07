@@ -196,13 +196,27 @@ function parsePlans(parsed: unknown): RetrievalPlan[] {
 }
 
 export async function decomposeNode(state: AgentState): Promise<Partial<AgentState>> {
-  const llm = createLLMFromEnv(env.LLM_PROVIDER, env.LLM_MODEL, env.OPENCODE_API_KEY);
+  const llm = createLLMFromEnv(
+    env.LLM_PROVIDER,
+    env.LLM_MODEL,
+    env.OPENCODE_API_KEY,
+    state.conversationId,
+  );
+
+  const conversationHistory =
+    state.conversationHistory && state.conversationHistory.length > 0
+      ? state.conversationHistory.map((message) => `${message.role}: ${message.content}`).join("\n")
+      : "No previous conversation.";
 
   const prompt = `${SYSTEM_PROMPT}
 
-USER QUESTION:
+  CONVERSATION HISTORY:
 
-${state.query}`;
+  ${conversationHistory}
+
+  CURRENT USER QUESTION:
+
+  ${state.query}`;
 
   const plans = await invokeJson({
     llm,

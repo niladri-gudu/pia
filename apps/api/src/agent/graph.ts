@@ -11,7 +11,18 @@ const MAX_RETRIEVAL_ITERATIONS = 2;
 
 const AgentStateAnnotation = Annotation.Root({
   projectId: Annotation<string>,
+
+  conversationId: Annotation<AgentState["conversationId"]>({
+    reducer: (_, next) => next,
+    default: () => undefined,
+  }),
+
   query: Annotation<string>,
+
+  conversationHistory: Annotation<AgentState["conversationHistory"]>({
+    reducer: (_, next) => next,
+    default: () => [],
+  }),
 
   subQuestions: Annotation<AgentState["subQuestions"]>({
     reducer: (_, next) => next,
