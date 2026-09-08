@@ -37,6 +37,13 @@ enum MessageRole {
   ASSISTANT
 }
 
+enum MemoryType {
+  FACT
+  PREFERENCE
+  DECISION
+  CONTEXT
+}
+
 enum ConnectionProvider {
   GITHUB
   JIRA
@@ -126,6 +133,7 @@ model Project {
   syncJobs   SyncJob[]
 
   conversations Conversation[]
+  memories      Memory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -249,4 +257,20 @@ model Message {
 
   @@index([conversationId])
   @@index([conversationId, createdAt])
+}
+
+model Memory {
+  id        String     @id @default(cuid())
+  projectId String
+
+  type      MemoryType
+  content   String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, type])
 }

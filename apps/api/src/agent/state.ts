@@ -22,6 +22,12 @@ export interface ConversationHistoryMessage {
   content: string;
 }
 
+export interface AgentMemory {
+  id: string;
+  type: "FACT" | "PREFERENCE" | "DECISION" | "CONTEXT";
+  content: string;
+}
+
 export interface ActivityConstraints {
   dateField?: ActivityDateField;
   temporalRange?: TemporalRange;
@@ -53,6 +59,7 @@ export interface AgentState {
   conversationId?: string;
   query: string;
   conversationHistory?: ConversationHistoryMessage[];
+  memories?: AgentMemory[];
   subQuestions: RetrievalPlan[];
   retrievedChunks: RetrievedChunk[];
   evidence: RetrievedEvidence[];

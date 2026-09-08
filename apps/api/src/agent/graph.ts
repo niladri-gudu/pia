@@ -5,6 +5,7 @@ import { generateNode } from "./nodes/generate";
 import { decomposeNode } from "./nodes/decompose";
 import { evaluateNode } from "./nodes/evaluate";
 import { refineNode } from "./nodes/refine";
+import { loadMemories } from "./nodes/load-memories";
 import type { AgentState } from "./state";
 
 const MAX_RETRIEVAL_ITERATIONS = 2;
@@ -20,6 +21,11 @@ const AgentStateAnnotation = Annotation.Root({
   query: Annotation<string>,
 
   conversationHistory: Annotation<AgentState["conversationHistory"]>({
+    reducer: (_, next) => next,
+    default: () => [],
+  }),
+
+  memories: Annotation<AgentState["memories"]>({
     reducer: (_, next) => next,
     default: () => [],
   }),
@@ -80,8 +86,10 @@ const graph = new StateGraph(AgentStateAnnotation)
   .addNode("refine", refineNode)
   .addNode("buildContext", buildContextNode)
   .addNode("generate", generateNode)
+  .addNode("loadMemories", loadMemories)
 
-  .addEdge(START, "decompose")
+  .addEdge(START, "loadMemories")
+  .addEdge("loadMemories", "decompose")
   .addEdge("decompose", "retrieve")
   .addEdge("retrieve", "evaluate")
 

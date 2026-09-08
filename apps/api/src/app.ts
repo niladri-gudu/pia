@@ -7,6 +7,7 @@ import { projectsRouter } from "./modules/projects/projects.routes.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 import { githubDevRouter } from "./modules/dev/github.routes.js";
 import { conversationsRouter } from "./modules/conversations/conversations.routes";
+import { memoryRouter } from "./modules/memory/memory.routes";
 
 export function createApp(): express.Express {
   const app = express();
@@ -37,6 +38,8 @@ export function createApp(): express.Express {
   app.use("/projects", projectsRouter);
 
   app.use("/conversations", conversationsRouter);
+
+  app.use("/memory", memoryRouter);
 
   if (env.NODE_ENV !== "production") {
     app.use("/dev", devRouter);

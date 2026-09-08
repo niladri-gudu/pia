@@ -17,6 +17,16 @@ Rules:
 - Prefer precise technical explanations.
 - When referencing information from the context, cite the source number like [Source 1].
 - Do not mention similarity scores.
+
+MEMORY RULES:
+
+- Project memories are persistent context from previous project interactions.
+- Use memories to understand project decisions, preferences, facts, and context.
+- Memories are NOT source evidence.
+- Never cite a memory as [Source N].
+- Only retrieved project evidence may be cited as [Source N].
+- If a memory conflicts with retrieved evidence, prefer the retrieved evidence and clearly explain the conflict.
+- Do not claim that a memory was verified by the retrieved evidence unless the evidence actually supports it.
 `;
 
 export async function generateNode(state: AgentState): Promise<Partial<AgentState>> {
