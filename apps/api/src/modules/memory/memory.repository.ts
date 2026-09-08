@@ -121,3 +121,56 @@ export async function searchSimilarMemories(
     similarity: Number(row.similarity),
   }));
 }
+
+/**
+ * Find an existing memory that is semantically similar to a candidate memory.
+ *
+ * This is used to prevent the same project fact, preference, decision,
+ * or context from being stored multiple times with slightly different wording.
+ */
+export async function findSimilarMemory(
+  projectId: string,
+  type: "FACT" | "PREFERENCE" | "DECISION" | "CONTEXT",
+  embedding: number[],
+  similarityThreshold = 0.9,
+): Promise<MemorySearchRow | null> {
+  if (embedding.length !== 768) {
+    throw new Error(`Memory embedding must have 768 dimensions, received ${embedding.length}`);
+  }
+
+  const vector = vectorLiteral(embedding);
+
+  const rows = await prisma.$queryRaw<MemorySearchRow[]>`
+    SELECT
+      m."id",
+      m."projectId",
+      m."type",
+      m."content",
+      1 - (m."embedding" <=> ${vector}::vector) AS "similarity"
+    FROM "Memory" m
+    WHERE m."embedding" IS NOT NULL
+      AND m."projectId" = ${projectId}
+      AND m."type" = ${type}::"MemoryType"
+      AND 1 - (m."embedding" <=> ${vector}::vector) >= ${similarityThreshold}
+    ORDER BY m."embedding" <=> ${vector}::vector
+    LIMIT 1
+  `;
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const row = rows[0];
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    projectId: row.projectId,
+    type: row.type,
+    content: row.content,
+    similarity: Number(row.similarity),
+  };
+}
