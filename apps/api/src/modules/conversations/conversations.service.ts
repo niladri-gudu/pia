@@ -1,5 +1,7 @@
 import { agentGraph } from "../../agent/graph";
 import { AppError } from "../../middleware/errorHandler";
+import { extractMemories } from "../../agent/memory-extractor";
+import { addProjectMemory } from "../memory/memory.service";
 import {
   createConversation,
   updateConversationTitle,
@@ -90,6 +92,16 @@ export async function sendConversationMessage(input: { conversationId: string; c
     content: result.answer,
     sources,
   });
+
+  const extractedMemoryResult = await extractMemories(conversation.id, conversationHistory);
+
+  for (const memory of extractedMemoryResult.memories) {
+    await addProjectMemory({
+      projectId: conversation.projectId,
+      type: memory.type,
+      content: memory.content,
+    });
+  }
 
   return {
     userMessage: {

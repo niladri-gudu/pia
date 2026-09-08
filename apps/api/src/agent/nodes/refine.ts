@@ -14,15 +14,21 @@ Available retrieval strategies:
 - "hybrid": Use both activity and semantic retrieval when evidence requires both a time-bounded project activity scope and technical interpretation.
 
 For activity retrieval:
-- Use "activity_constraints" when the missing evidence has a time constraint.
-- "dateField" must be either "occurredAt" or "mergedAt".
+- Every "activity" plan MUST include "activity_constraints".
+- Every "hybrid" plan MUST include "activity_constraints".
+- Never return an "activity" or "hybrid" plan without "activity_constraints".
+- "dateField" is required and must be either "occurredAt" or "mergedAt".
+- "temporalRange" is required and must be one of:
+  "today", "yesterday", "this_week", "last_week",
+  "this_month", "last_month", "this_quarter", "last_quarter",
+  "this_year", "last_year", or "custom".
 - Use "mergedAt" specifically when the missing evidence concerns pull requests merged during a period.
-- Use "temporalRange" for relative time expressions such as "this_quarter", "last_month", etc.
+- Use "occurredAt" for general commits, issues, pull requests, or project activity unless the question specifically concerns PR merges.
 - Do not calculate dates yourself.
 - Preserve the temporal intent from the original question or existing retrieval plans.
 - Use "semantic_query" for the semantic portion of a hybrid plan.
 - Use "exhaustive": true when the missing evidence requires a complete or comprehensive set of activities within a time period.
-- Use "exhaustive": false or omit it when a limited set of relevant activities is sufficient.
+- Use "exhaustive": false when a limited set of relevant activities is sufficient.
 
 Rules:
 - Use the original user question as the overall goal.
@@ -96,8 +102,23 @@ function parseRefinedPlans(parsed: unknown): RetrievalPlan[] {
         ? plan.activity_constraints
         : undefined;
 
+    if ((strategy === "activity" || strategy === "hybrid") && !activityConstraints) {
+      throw new Error(
+        `Refined plan ${index} with strategy "${strategy}" is missing activity_constraints.`,
+      );
+    }
+
     if (activityConstraints) {
       const constraints = activityConstraints as Record<string, unknown>;
+
+      if (
+        (strategy === "activity" || strategy === "hybrid") &&
+        (constraints.dateField === undefined || constraints.temporalRange === undefined)
+      ) {
+        throw new Error(
+          `Refined plan ${index} with strategy "${strategy}" is missing required activity constraints.`,
+        );
+      }
 
       if (
         constraints.dateField !== undefined &&
@@ -166,7 +187,7 @@ export async function refineNode(state: AgentState): Promise<Partial<AgentState>
     env.OPENCODE_API_KEY,
     state.conversationId,
   );
-  
+
   const prompt = `${SYSTEM_PROMPT}
 
 ORIGINAL USER QUESTION:

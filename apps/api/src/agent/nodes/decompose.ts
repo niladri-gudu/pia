@@ -47,10 +47,16 @@ For activity retrieval:
 Rules:
 - Return 1-5 retrieval plans.
 - Every retrieval plan MUST contain:
-  - "question": a non-empty string describing the retrieval task.
-  - "strategy": one of "semantic", "activity", or "hybrid".
-- For activity or hybrid plans, include "activity_constraints" when a time constraint is present.
-- For hybrid plans, include "semantic_query".
+- "question": a non-empty string describing the retrieval task.
+- "strategy": one of "semantic", "activity", or "hybrid".
+- Every "activity" plan MUST include "activity_constraints".
+- Every "hybrid" plan MUST include "activity_constraints".
+- Never return an "activity" or "hybrid" plan without "activity_constraints".
+- "dateField" and "temporalRange" are required for activity and hybrid plans.
+- Use "occurredAt" for general project activity.
+- Use "mergedAt" specifically for pull requests merged during a period.
+- If the user did not specify a time period, use "this_year" as the default temporalRange.
+- Use "exhaustive": true only when complete activity coverage is requested.- For hybrid plans, include "semantic_query".
 - Preserve the user's intent.
 - Keep each question focused enough for retrieval.
 - Do not answer the user's question.
@@ -142,8 +148,23 @@ function parsePlans(parsed: unknown): RetrievalPlan[] {
         ? plan.activity_constraints
         : undefined;
 
+    if ((strategy === "activity" || strategy === "hybrid") && !activityConstraints) {
+      throw new Error(
+        `Retrieval plan ${index} with strategy "${strategy}" is missing activity_constraints.`,
+      );
+    }
+
     if (activityConstraints) {
       const constraints = activityConstraints as Record<string, unknown>;
+
+      if (
+        (strategy === "activity" || strategy === "hybrid") &&
+        (constraints.dateField === undefined || constraints.temporalRange === undefined)
+      ) {
+        throw new Error(
+          `Retrieval plan ${index} with strategy "${strategy}" is missing required activity constraints.`,
+        );
+      }
 
       if (
         constraints.dateField !== undefined &&

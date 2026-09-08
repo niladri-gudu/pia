@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
 import { addProjectMemory, getProjectMemories } from "./memory.service";
+import { createEmbeddingProvider } from "../../indexing/embedding-provider";
+import { embedProjectMemories } from "./memory-indexer";
 
 export const memoryRouter: IRouter = Router();
 
@@ -51,6 +53,27 @@ memoryRouter.post("/project/:projectId", async (req, res, next) => {
     });
 
     res.status(201).json(memory);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /memory/project/:projectId/embed
+ *
+ * Generate embeddings for project memories that do not have one yet.
+ */
+memoryRouter.post("/project/:projectId/embed", async (req, res, next) => {
+  try {
+    const provider = createEmbeddingProvider();
+
+    const processed = await embedProjectMemories(provider, req.params.projectId);
+
+    res.json({
+      success: true,
+      projectId: req.params.projectId,
+      processed,
+    });
   } catch (error) {
     next(error);
   }

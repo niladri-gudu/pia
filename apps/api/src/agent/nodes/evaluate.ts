@@ -5,12 +5,22 @@ import { invokeJson } from "../llm-json";
 
 const SYSTEM_PROMPT = `You are the evidence evaluation component of Project Intelligence Agent.
 
-Your job is to determine whether the retrieved project evidence is sufficient to answer the user's question.
+Your job is to determine whether the available project context is sufficient to answer the user's question.
 
-Evaluate the evidence against each subquestion.
+The available context consists of:
+1. Retrieved project evidence from the repository.
+2. Retrieved project memories representing persistent facts, preferences, decisions, and context from previous project interactions.
+
+Evaluate both sources of context against the user's question.
 
 Rules:
 - Evidence must be relevant to the subquestion.
+- Project memories may directly answer questions about previously established project facts, preferences, decisions, or context.
+- If a relevant project memory directly answers the user's question, repository evidence is not required merely to verify that memory.
+- Memories are persistent project context, but they are not source evidence and must never be treated as citation sources.
+- If a memory answers the question but repository evidence does not verify it, the answer may still be considered sufficient when the question asks what was previously decided, preferred, established, or remembered.
+- If the user asks what the repository currently contains, implements, or proves, repository evidence is required.
+- If the question asks both what was decided and whether that decision was implemented or verified in the repository, both memory and repository evidence may be required.
 - Evidence must contain enough information to support a useful answer.
 - Do not answer the user's question.
 - Do not invent missing information.
@@ -116,6 +126,18 @@ export async function evaluateNode(state: AgentState): Promise<Partial<AgentStat
     ${evidenceText}`;
   });
 
+  const memoryText =
+    state.memories && state.memories.length > 0
+      ? state.memories
+          .map(
+            (memory, index) =>
+              `Memory ${index + 1}:
+Type: ${memory.type}
+Content: ${memory.content}`,
+          )
+          .join("\n\n")
+      : "No relevant project memories retrieved.";
+
   const evidence = evidenceSections.join("\n\n---\n\n");
 
   const prompt = `${SYSTEM_PROMPT}
@@ -123,6 +145,10 @@ export async function evaluateNode(state: AgentState): Promise<Partial<AgentStat
 ORIGINAL USER QUESTION:
 
 ${state.query}
+
+RELEVANT PROJECT MEMORIES:
+
+${memoryText}
 
 SUBQUESTIONS AND EVIDENCE:
 

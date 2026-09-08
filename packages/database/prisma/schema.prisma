@@ -265,6 +265,7 @@ model Memory {
 
   type      MemoryType
   content   String
+  embedding Unsupported("vector(768)")?
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

@@ -5,7 +5,7 @@ import { generateNode } from "./nodes/generate";
 import { decomposeNode } from "./nodes/decompose";
 import { evaluateNode } from "./nodes/evaluate";
 import { refineNode } from "./nodes/refine";
-import { loadMemories } from "./nodes/load-memories";
+import { retrieveMemories } from "./nodes/retrieve-memories";
 import type { AgentState } from "./state";
 
 const MAX_RETRIEVAL_ITERATIONS = 2;
@@ -86,10 +86,10 @@ const graph = new StateGraph(AgentStateAnnotation)
   .addNode("refine", refineNode)
   .addNode("buildContext", buildContextNode)
   .addNode("generate", generateNode)
-  .addNode("loadMemories", loadMemories)
+  .addNode("retrieveMemories", retrieveMemories)
 
-  .addEdge(START, "loadMemories")
-  .addEdge("loadMemories", "decompose")
+  .addEdge(START, "retrieveMemories")
+  .addEdge("retrieveMemories", "decompose")
   .addEdge("decompose", "retrieve")
   .addEdge("retrieve", "evaluate")
 
