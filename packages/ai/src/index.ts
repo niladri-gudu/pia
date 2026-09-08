@@ -11,3 +11,5 @@ export { runEvaluationCase } from "./evaluation/runner";
 export { evaluateAnswer } from "./evaluation/evaluator";
 
 export type { EvaluationCase, EvaluationResult } from "./evaluation/types";
+
+export { createEvaluationClient, recordEvaluationFeedback } from "./evaluation/langsmith";

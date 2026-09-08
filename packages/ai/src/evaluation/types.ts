@@ -62,3 +62,9 @@ export interface EvaluationResult {
    */
   reasoning?: string;
 }
+
+export interface EvaluationFeedback {
+  key: string;
+  score: number;
+  comment?: string;
+}

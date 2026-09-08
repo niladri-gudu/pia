@@ -6,6 +6,7 @@ import { decomposeNode } from "./nodes/decompose";
 import { evaluateNode } from "./nodes/evaluate";
 import { refineNode } from "./nodes/refine";
 import { retrieveMemories } from "./nodes/retrieve-memories";
+import { inputGuardrailNode, outputGuardrailNode } from "./nodes/guardrails";
 import type { AgentState } from "./state";
 
 const MAX_RETRIEVAL_ITERATIONS = 2;
@@ -80,6 +81,7 @@ function routeAfterEvaluation(state: AgentState): "refine" | "buildContext" {
 }
 
 const graph = new StateGraph(AgentStateAnnotation)
+  .addNode("inputGuardrail", inputGuardrailNode)
   .addNode("decompose", decomposeNode)
   .addNode("retrieve", retrieveNode)
   .addNode("evaluate", evaluateNode)
@@ -87,8 +89,10 @@ const graph = new StateGraph(AgentStateAnnotation)
   .addNode("buildContext", buildContextNode)
   .addNode("generate", generateNode)
   .addNode("retrieveMemories", retrieveMemories)
+  .addNode("outputGuardrail", outputGuardrailNode)
 
-  .addEdge(START, "retrieveMemories")
+  .addEdge(START, "inputGuardrail")
+  .addEdge("inputGuardrail", "retrieveMemories")
   .addEdge("retrieveMemories", "decompose")
   .addEdge("decompose", "retrieve")
   .addEdge("retrieve", "evaluate")
@@ -100,6 +104,7 @@ const graph = new StateGraph(AgentStateAnnotation)
 
   .addEdge("refine", "retrieve")
   .addEdge("buildContext", "generate")
-  .addEdge("generate", END);
+  .addEdge("generate", "outputGuardrail")
+  .addEdge("outputGuardrail", END);
 
 export const agentGraph = graph.compile();
