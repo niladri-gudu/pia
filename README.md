@@ -308,6 +308,13 @@ raw HTML, and internal errors never reach clients (sanitized messages, logs
 server-side). Multi-user auth and per-workspace credential encryption are the
 top items in Future Improvements.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Chat — grounded answer with project memory and cited sources](docs/screenshots/chat-light.png) | ![Dashboard](docs/screenshots/dashboard-light.png) |
+| ![Dark theme](docs/screenshots/chat-dark.png) | ![Mobile](docs/screenshots/chat-mobile.png) |
+
 ## Deployment
 
 See [`docs/deployment.md`](docs/deployment.md) for a production topology
