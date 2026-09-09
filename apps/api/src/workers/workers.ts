@@ -6,6 +6,7 @@ import { createEmbeddingProvider } from "../indexing/embedding-provider.js";
 import { embedDocumentChunks } from "../indexing/embedding-indexer.js";
 import { chunkProjectDocuments } from "../indexing/document-indexer.js";
 import { enqueueEmbeddingIndexJob } from "./queues.js";
+import { logger } from "../lib/logger.js";
 import type { EmbeddingIndexJob } from "./jobs/types.js";
 
 let systemWorker: Worker | undefined;
@@ -42,8 +43,11 @@ export function startGithubSyncWorker(): Worker {
         throw new Error(`SyncJob ${syncJobId} is not a GitHub sync job`);
       }
 
-      if (syncJob.status !== "PENDING") {
-        throw new Error(`SyncJob ${syncJobId} is not pending; current status is ${syncJob.status}`);
+      // A retry attempt of a previously failed job arrives while the
+      // SyncJob is already FAILED, so both PENDING (first attempt) and
+      // FAILED (BullMQ retry) are valid entry states.
+      if (syncJob.status !== "PENDING" && syncJob.status !== "FAILED") {
+        throw new Error(`SyncJob ${syncJobId} is not resumable; current status is ${syncJob.status}`);
       }
 
       await prisma.syncJob.update({
@@ -121,11 +125,11 @@ export function startGithubSyncWorker(): Worker {
   );
 
   githubSyncWorker.on("completed", (job) => {
-    console.log(`[worker:github-sync] job ${job?.id} completed`);
+    logger.info(`[worker:github-sync] job ${job?.id} completed`);
   });
 
   githubSyncWorker.on("failed", (job, err) => {
-    console.error(`[worker:github-sync] job ${job?.id} failed`, err);
+    logger.error(`[worker:github-sync] job ${job?.id} failed: ${err.message}`);
   });
 
   return githubSyncWorker;
@@ -141,17 +145,17 @@ export function startSystemWorker(): Worker {
   systemWorker = new Worker(
     "system",
     async (job) => {
-      console.log(`[worker:system] processing job ${job.id} (${job.name})`, job.data);
+      logger.debug(`[worker:system] processing job ${job.id} (${job.name})`);
     },
     { connection: redisConnection() },
   );
 
   systemWorker.on("completed", (job) => {
-    console.log(`[worker:system] job ${job.id} completed`);
+    logger.debug(`[worker:system] job ${job.id} completed`);
   });
 
   systemWorker.on("failed", (job, err) => {
-    console.error(`[worker:system] job ${job?.id} failed`, err);
+    logger.error(`[worker:system] job ${job?.id} failed: ${err.message}`);
   });
 
   return systemWorker;
@@ -163,40 +167,40 @@ export function startEmbeddingIndexWorker(): void {
   embeddingIndexWorker = new Worker<EmbeddingIndexJob>(
     "embedding-index",
     async (job) => {
-      console.log(`[embedding-worker] Starting job ${job.id} for project ${job.data.projectId}`,)
+      logger.debug(`[embedding-worker] Starting job ${job.id} for project ${job.data.projectId}`);
 
       const chunked = await chunkProjectDocuments(job.data.projectId);
 
-      console.log(
+      logger.debug(
         `[embedding-worker] Chunked ${chunked} new chunks for project ${job.data.projectId}`,
-      )
+      );
 
       const provider = createEmbeddingProvider();
 
-      const processed = await embedDocumentChunks(
-        provider,
-        job.data.projectId
-      )
+      const processed = await embedDocumentChunks(provider, job.data.projectId);
 
-      console.log(`[embedding-worker] Completed job ${job.id}. Embedded ${processed} chunks.`,)
+      logger.info(
+        `[embedding-worker] Completed job ${job.id}. Embedded ${processed} chunks.`,
+      );
 
       return {
-        processed
-      }
+        processed,
+      };
     },
     {
       connection: redisConnection(),
-    }
-  )
+    },
+  );
 
   embeddingIndexWorker.on("failed", (job, error) => {
-    console.error(
-      `[embedding-worker] Job ${job?.id ?? "unknown"} failed:`,
-      error,
+    logger.error(
+      `[embedding-worker] Job ${job?.id ?? "unknown"} failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   });
 
-  console.log("[embedding-worker] Started");
+  logger.debug("[embedding-worker] Started");
 }
 
 export async function stopSystemWorker(): Promise<void> {

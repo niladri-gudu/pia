@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AgentState } from "../state";
 
 const { createLLMMock, invokeJsonMock } = vi.hoisted(() => ({
   createLLMMock: vi.fn(),
@@ -33,7 +34,7 @@ describe("evaluateNode", () => {
   });
 
   it("returns sufficient evidence when the evaluator says the context is sufficient", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse({
         evidenceSufficient: true,
         missingEvidence: [],
@@ -105,7 +106,7 @@ describe("evaluateNode", () => {
   });
 
   it("returns missing evidence when the evaluator says the context is insufficient", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse({
         evidenceSufficient: false,
         missingEvidence: [
@@ -149,7 +150,7 @@ describe("evaluateNode", () => {
   });
 
   it("rejects invalid evaluator output", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse({
         evidenceSufficient: "yes",
         missingEvidence: [],
@@ -179,7 +180,7 @@ describe("evaluateNode", () => {
         retrievalIteration: 0,
         context: "",
         answer: "",
-      } as any),
+      } as unknown as AgentState),
     ).rejects.toThrow(
       'LLM evaluation response must contain "evidenceSufficient" boolean and "missingEvidence" string array.',
     );

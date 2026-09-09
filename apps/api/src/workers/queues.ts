@@ -47,10 +47,22 @@ export async function enqueueGithubSyncJob(
   projectId: string,
   syncJobId: string,
 ): Promise<string> {
-  const job = await getGithubSyncQueue().add("github.sync", {
-    projectId,
-    syncJobId,
-  });
+  const job = await getGithubSyncQueue().add(
+    "github.sync",
+    {
+      projectId,
+      syncJobId,
+    },
+    {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 30_000,
+      },
+      removeOnComplete: true,
+      removeOnFail: false,
+    },
+  );
 
   return job.id ?? "";
 }

@@ -1,4 +1,5 @@
 import type { AgentState } from "../state";
+import { logger } from "../../lib/logger";
 
 export function buildContextNode(state: AgentState): Partial<AgentState> {
   const memoryContext =
@@ -36,7 +37,7 @@ PROJECT EVIDENCE:
 
 ${evidenceContext}`;
 
-  console.log(
+  logger.debug(
     `[agent] Built context from ${state.retrievedChunks.length} chunks and ${
       state.memories?.length ?? 0
     } memories`,

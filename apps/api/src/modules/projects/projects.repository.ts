@@ -100,6 +100,25 @@ export async function findProjectForSync(projectId: string) {
 }
 
 /**
+ * Find only the basic identity fields of a project.
+ *
+ * Used to validate existence/source before running retrieval or agent
+ * queries for the project.
+ */
+export async function findProjectBasic(projectId: string) {
+  return prisma.project.findUnique({
+    where: {
+      id: projectId,
+    },
+    select: {
+      id: true,
+      name: true,
+      sourceType: true,
+    },
+  });
+}
+
+/**
  * Check whether a project already has an active sync job.
  */
 export async function findActiveSyncJob(projectId: string) {
@@ -115,6 +134,24 @@ export async function findActiveSyncJob(projectId: string) {
       status: true,
     },
   });
+}
+
+/**
+ * Check whether a project has at least one indexed document chunk.
+ */
+export async function projectHasDocumentChunks(projectId: string) {
+  const chunk = await prisma.documentChunk.findFirst({
+    where: {
+      document: {
+        projectId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return chunk !== null;
 }
 
 /**

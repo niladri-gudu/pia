@@ -1,6 +1,7 @@
 import { createLLMFromEnv } from "@project-intelligence/ai";
 import type { AgentState } from "../state";
 import { env } from "../../config/env";
+import { logger } from "../../lib/logger";
 import { invokeJson } from "../llm-json";
 
 const SYSTEM_PROMPT = `You are the evidence evaluation component of Project Intelligence Agent.
@@ -161,10 +162,10 @@ ${evidence}`;
     label: "evaluation",
   });
 
-  console.log(`[agent] Evidence sufficient: ${evaluation.evidenceSufficient}`);
+  logger.debug(`[agent] Evidence sufficient: ${evaluation.evidenceSufficient}`);
 
   if (!evaluation.evidenceSufficient) {
-    console.log(`[agent] Missing evidence: ${evaluation.missingEvidence.join("; ")}`);
+    logger.debug(`[agent] Missing evidence: ${evaluation.missingEvidence.join("; ")}`);
   }
 
   return evaluation;

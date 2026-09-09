@@ -1,6 +1,7 @@
 import { createLLMFromEnv } from "@project-intelligence/ai";
 import type { AgentState, RetrievalPlan } from "../state";
 import { env } from "../../config/env";
+import { logger } from "../../lib/logger";
 import { invokeJson } from "../llm-json";
 
 const SYSTEM_PROMPT = `You are the retrieval refinement component of Project Intelligence Agent.
@@ -211,7 +212,7 @@ Create targeted retrieval questions for the missing evidence.`;
     label: "refinement",
   });
 
-  console.log(
+  logger.debug(
     `[agent] Generated ${refinedPlans.length} refined retrieval plans: ${refinedPlans
       .map((plan) => plan.strategy)
       .join(", ")}`,

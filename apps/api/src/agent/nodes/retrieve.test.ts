@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AgentState } from "../state";
 
 const { retrieveMock, activityMock } = vi.hoisted(() => ({
   retrieveMock: vi.fn(),
@@ -56,7 +57,7 @@ describe("retrieveNode", () => {
           strategy: "semantic",
         },
       ],
-    } as any);
+    } as unknown as AgentState);
 
     expect(retrieveMock).toHaveBeenCalledWith("What is Flight?", {
       projectId: "project-1",
@@ -87,7 +88,7 @@ describe("retrieveNode", () => {
         { question: "Q1", strategy: "semantic" },
         { question: "Q2", strategy: "semantic" },
       ],
-    } as any);
+    } as unknown as AgentState);
 
     expect(result.retrievedChunks).toHaveLength(1);
     expect(result.evidence).toHaveLength(2);
@@ -119,7 +120,7 @@ describe("retrieveNode", () => {
           },
         },
       ],
-    } as any);
+    } as unknown as AgentState);
 
     expect(activityMock).toHaveBeenCalled();
 

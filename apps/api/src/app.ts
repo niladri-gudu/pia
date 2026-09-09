@@ -4,10 +4,9 @@ import { env } from "./config/env.js";
 import { devRouter } from "./modules/dev/dev.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
-import { errorHandler, notFound } from "./middleware/errorHandler.js";
-import { githubDevRouter } from "./modules/dev/github.routes.js";
 import { conversationsRouter } from "./modules/conversations/conversations.routes";
 import { memoryRouter } from "./modules/memory/memory.routes";
+import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 export function createApp(): express.Express {
   const app = express();
@@ -31,8 +30,6 @@ export function createApp(): express.Express {
     });
   });
 
-  app.use("/dev", githubDevRouter);
-
   app.use("/health", healthRouter);
 
   app.use("/projects", projectsRouter);
@@ -42,6 +39,8 @@ export function createApp(): express.Express {
   app.use("/memory", memoryRouter);
 
   if (env.NODE_ENV !== "production") {
+    // Dev-only debugging routes. Product routes live under /projects,
+    // /conversations and /memory.
     app.use("/dev", devRouter);
   }
 

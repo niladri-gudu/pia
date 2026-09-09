@@ -1,6 +1,7 @@
 import type { EmbeddingProvider } from "@project-intelligence/ai";
 import prisma from "@project-intelligence/database";
 import { saveDocumentChunkEmbedding } from "./embedding.repository.js";
+import { logger } from "../lib/logger.js";
 
 const BATCH_SIZE = 50;
 
@@ -56,7 +57,7 @@ export async function embedDocumentChunks(
 
     processed += chunks.length;
 
-    console.log(
+    logger.debug(
       `[embedding-indexer] Embedded ${chunks.length} chunks. Total: ${processed}`,
     );
   }

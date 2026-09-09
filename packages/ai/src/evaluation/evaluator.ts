@@ -1,4 +1,5 @@
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { extractText, parseJsonLoose } from "../llm/json";
 import type { EvaluationResult } from "./types";
 
 /**
@@ -42,13 +43,16 @@ Return ONLY valid JSON in exactly this format:
 
   const response = await llm.invoke(prompt);
 
-  const content =
-    typeof response.content === "string" ? response.content : JSON.stringify(response.content);
+  const content = extractText(response.content);
 
-  const parsed = JSON.parse(content) as {
+  const parsed = parseJsonLoose(content) as {
     score: number;
     reasoning: string;
   };
+
+  if (typeof parsed.score !== "number" || typeof parsed.reasoning !== "string") {
+    throw new Error("Evaluator response is missing a numeric score or reasoning");
+  }
 
   return {
     ...result,

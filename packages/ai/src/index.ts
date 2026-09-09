@@ -4,7 +4,9 @@ export * from "./indexing/index.js";
 export * from "./embeddings/index.js";
 export * from "./retrieval/index.js";
 
-export { evaluationDataset } from "./evaluation/dataset";
+export { extractText, parseJsonLoose } from "./llm/json.js";
+
+export { createEvaluationDataset } from "./evaluation/dataset";
 
 export { runEvaluationCase } from "./evaluation/runner";
 

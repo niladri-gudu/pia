@@ -3,6 +3,8 @@ import {
   getProject,
   getProjects,
   getProjectSyncStatus,
+  runProjectAgentQuery,
+  searchProjectDocuments,
   triggerProjectSync,
 } from "./projects.service";
 
@@ -65,6 +67,40 @@ projectsRouter.post("/:id/sync", async (req, res, next) => {
     const result = await triggerProjectSync(req.params.id);
 
     res.status(202).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /projects/:id/search?q=
+ *
+ * Semantic search over the project's indexed document chunks.
+ */
+projectsRouter.get("/:id/search", async (req, res, next) => {
+  try {
+    const query = typeof req.query.q === "string" ? req.query.q : "";
+
+    const result = await searchProjectDocuments(req.params.id, query);
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /projects/:id/agent?q=
+ *
+ * One-shot agent query with grounded, cited answers.
+ */
+projectsRouter.get("/:id/agent", async (req, res, next) => {
+  try {
+    const query = typeof req.query.q === "string" ? req.query.q : "";
+
+    const result = await runProjectAgentQuery(req.params.id, query);
+
+    res.json(result);
   } catch (error) {
     next(error);
   }

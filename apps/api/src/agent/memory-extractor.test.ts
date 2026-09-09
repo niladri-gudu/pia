@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const invokeMock = vi.fn();
 
-vi.mock("@project-intelligence/ai", () => ({
+vi.mock("@project-intelligence/ai", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   createLLMFromEnv: vi.fn(() => ({
     invoke: invokeMock,
   })),

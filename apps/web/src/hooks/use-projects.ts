@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
-  askProjectAgent,
   createConversation,
   fetchConversationMessages,
   fetchProject,
@@ -61,12 +60,6 @@ export function useStartProjectSync(projectId: string) {
         queryKey: ["projects", projectId, "sync-status"],
       });
     },
-  });
-}
-
-export function useAskProjectAgent(projectId: string) {
-  return useMutation({
-    mutationFn: (question: string) => askProjectAgent(projectId, question),
   });
 }
 

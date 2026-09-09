@@ -27,20 +27,12 @@ export interface ProjectDetails extends Project {
 }
 
 export interface SyncResponse {
-  success: boolean;
-  jobId: string;
-}
-
-export interface AgentSource {
-  title: string;
-  url: string | null;
-  similarity: number;
-}
-
-export interface AgentResponse {
-  success: boolean;
-  answer: string;
-  sources: AgentSource[];
+  syncJob: {
+    id: string;
+    status: string;
+    createdAt: string;
+  };
+  queueJobId: string;
 }
 
 export interface SearchResult {
@@ -54,7 +46,6 @@ export interface SearchResult {
 }
 
 export interface ProjectSearchResponse {
-  success: boolean;
   project: {
     id: string;
     name: string;
@@ -135,7 +126,7 @@ export async function fetchProject(projectId: string): Promise<ProjectDetails> {
 }
 
 export async function startProjectSync(projectId: string): Promise<SyncResponse> {
-  const res = await fetch(`${API_BASE_URL}/dev/github/sync/${projectId}`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${projectId}/sync`, {
     method: "POST",
   });
 
@@ -147,7 +138,7 @@ export async function startProjectSync(projectId: string): Promise<SyncResponse>
 }
 
 export async function fetchProjectSyncStatus(projectId: string): Promise<SyncJob | null> {
-  const res = await fetch(`${API_BASE_URL}/dev/github/sync/${projectId}/status`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${projectId}/sync-status`, {
     cache: "no-store",
   });
 
@@ -156,26 +147,10 @@ export async function fetchProjectSyncStatus(projectId: string): Promise<SyncJob
   }
 
   const data = (await res.json()) as {
-    data?: SyncJob | null;
+    syncJob?: SyncJob | null;
   };
 
-  return data.data ?? null;
-}
-
-export async function askProjectAgent(projectId: string, question: string): Promise<AgentResponse> {
-  const params = new URLSearchParams({
-    q: question,
-  });
-
-  const res = await fetch(`${API_BASE_URL}/dev/github/agent/${projectId}?${params.toString()}`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error(`Agent request failed with status ${res.status}`);
-  }
-
-  return (await res.json()) as AgentResponse;
+  return data.syncJob ?? null;
 }
 
 export async function searchProject(
@@ -186,7 +161,7 @@ export async function searchProject(
     q: query,
   });
 
-  const res = await fetch(`${API_BASE_URL}/dev/github/search/${projectId}?${params.toString()}`, {
+  const res = await fetch(`${API_BASE_URL}/projects/${projectId}/search?${params.toString()}`, {
     cache: "no-store",
   });
 

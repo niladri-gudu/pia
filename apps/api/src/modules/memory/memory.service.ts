@@ -1,4 +1,5 @@
 import { createEmbeddingProvider } from "../../indexing/embedding-provider";
+import { logger } from "../../lib/logger";
 import {
   createMemory,
   findProjectMemories,
@@ -24,7 +25,9 @@ export async function addProjectMemory(input: {
   const existingMemory = await findSimilarMemory(input.projectId, input.type, embedding);
 
   if (existingMemory) {
-    console.log(`[memory] Duplicate detected for project ${input.projectId}: ${existingMemory.id}`);
+    logger.debug(
+      `[memory] Duplicate detected for project ${input.projectId}: ${existingMemory.id}`,
+    );
     return {
       id: existingMemory.id,
       projectId: existingMemory.projectId,
@@ -35,7 +38,7 @@ export async function addProjectMemory(input: {
     };
   }
 
-  console.log(`[memory] Creating new memory for project ${input.projectId}`);
+  logger.debug(`[memory] Creating new memory for project ${input.projectId}`);
 
   const memory = await createMemory(input);
 

@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
+import { logger } from "../lib/logger";
 
 export class AppError extends Error {
   constructor(
@@ -44,7 +45,9 @@ export function errorHandler(
     return;
   }
 
-  console.error("Unhandled error:", err);
+  logger.error(
+    `Unhandled error: ${err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err)}`,
+  );
   res.status(500).json({
     error: "internal_server_error",
     message: "An unexpected error occurred",

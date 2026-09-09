@@ -1,5 +1,6 @@
 import { createEmbeddingProvider } from "../../indexing/embedding-provider";
 import { searchSimilarMemories } from "../../modules/memory/memory.repository";
+import { logger } from "../../lib/logger";
 import type { AgentMemory, AgentState } from "../state";
 
 const embeddingProvider = createEmbeddingProvider();
@@ -20,7 +21,7 @@ export async function retrieveMemories(state: AgentState): Promise<Partial<Agent
     content: memory.content,
   }));
 
-  console.log(`[agent] Retrieved ${normalizedMemories.length} relevant memories`);
+  logger.debug(`[agent] Retrieved ${normalizedMemories.length} relevant memories`);
 
   return {
     memories: normalizedMemories,

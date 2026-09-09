@@ -2,6 +2,7 @@ import { agentGraph } from "../../agent/graph";
 import { AppError } from "../../middleware/errorHandler";
 import { extractMemories } from "../../agent/memory-extractor";
 import { addProjectMemory } from "../memory/memory.service";
+import { logger } from "../../lib/logger";
 import {
   createConversation,
   updateConversationTitle,
@@ -93,14 +94,25 @@ export async function sendConversationMessage(input: { conversationId: string; c
     sources,
   });
 
-  const extractedMemoryResult = await extractMemories(conversation.id, conversationHistory);
+  // Memory extraction happens after the answer has been persisted, so a
+  // failure here must not fail the request — the conversation already
+  // contains both messages at this point.
+  try {
+    const extractedMemoryResult = await extractMemories(conversation.id, conversationHistory);
 
-  for (const memory of extractedMemoryResult.memories) {
-    await addProjectMemory({
-      projectId: conversation.projectId,
-      type: memory.type,
-      content: memory.content,
-    });
+    for (const memory of extractedMemoryResult.memories) {
+      await addProjectMemory({
+        projectId: conversation.projectId,
+        type: memory.type,
+        content: memory.content,
+      });
+    }
+  } catch (error) {
+    logger.warn(
+      `[conversations] Memory extraction failed for conversation ${conversation.id}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
   }
 
   return {

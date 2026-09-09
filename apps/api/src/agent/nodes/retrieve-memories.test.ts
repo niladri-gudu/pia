@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AgentState } from "../state";
 
 const { embedQueryMock, searchSimilarMemoriesMock } = vi.hoisted(() => ({
   embedQueryMock: vi.fn(),
@@ -46,7 +47,7 @@ describe("retrieveMemories", () => {
     const result = await retrieveMemories({
       projectId: "project-1",
       query: "What did we decide about caching?",
-    } as any);
+    } as unknown as AgentState);
 
     expect(embedQueryMock).toHaveBeenCalledWith("What did we decide about caching?");
 
@@ -72,7 +73,7 @@ describe("retrieveMemories", () => {
     const result = await retrieveMemories({
       projectId: "project-1",
       query: "What database are we using?",
-    } as any);
+    } as unknown as AgentState);
 
     expect(embedQueryMock).toHaveBeenCalledWith("What database are we using?");
 
@@ -87,7 +88,7 @@ describe("retrieveMemories", () => {
     await retrieveMemories({
       projectId: "project-123",
       query: "What was previously decided?",
-    } as any);
+    } as unknown as AgentState);
 
     expect(searchSimilarMemoriesMock).toHaveBeenCalledWith("project-123", embedding, 5);
   });

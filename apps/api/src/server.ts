@@ -3,6 +3,7 @@ import { configureTracingFromEnv } from "@project-intelligence/ai";
 import { env } from "./config/env.js";
 import { createApp } from "./app.js";
 import { closeRedis } from "./lib/redis.js";
+import { logger } from "./lib/logger.js";
 import {
   startGithubSyncWorker,
   startSystemWorker,
@@ -15,26 +16,27 @@ import {
 const app = createApp();
 
 if (configureTracingFromEnv()) {
-  console.log(
-    `🔍 LangSmith tracing enabled (project: ${env.LANGSMITH_PROJECT})`,
-  );
+  logger.info(`LangSmith tracing enabled (project: ${env.LANGSMITH_PROJECT})`);
 }
 
-// Start the dev/system worker in non-production environments to verify the
-// API -> Queue -> Redis -> Worker pipeline.
+// Sync + indexing workers process the BullMQ queues and are required in
+// every environment — without them enqueued jobs would never run.
+startGithubSyncWorker();
+startEmbeddingIndexWorker();
+
+// The system ping worker only exists to verify the API -> Queue -> Redis ->
+// Worker pipeline during development.
 if (env.NODE_ENV !== "production") {
   startSystemWorker();
-  startGithubSyncWorker();
-  startEmbeddingIndexWorker();
 }
 
 const server = app.listen(env.API_PORT, () => {
-  console.log(`🚀 API listening on http://localhost:${env.API_PORT}`);
-  console.log(`   Health: http://localhost:${env.API_PORT}/health`);
+  logger.info(`API listening on http://localhost:${env.API_PORT}`);
+  logger.info(`Health: http://localhost:${env.API_PORT}/health`);
 });
 
 async function shutdown(signal: string): Promise<void> {
-  console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+  logger.info(`Received ${signal}. Shutting down gracefully...`);
   server.close();
 
   await stopSystemWorker();

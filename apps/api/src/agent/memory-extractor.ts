@@ -1,4 +1,4 @@
-import { createLLMFromEnv } from "@project-intelligence/ai";
+import { createLLMFromEnv, extractText, parseJsonLoose } from "@project-intelligence/ai";
 
 import { env } from "../config/env";
 import { memoryExtractionSchema, type MemoryExtractionResult } from "./memory-schema";
@@ -74,10 +74,9 @@ ${conversation}`;
 
   const response = await llm.invoke(prompt);
 
-  const content =
-    typeof response.content === "string" ? response.content : JSON.stringify(response.content);
+  const content = extractText(response.content);
 
-  const parsed = JSON.parse(content);
+  const parsed = parseJsonLoose(content);
 
   return memoryExtractionSchema.parse(parsed);
 }

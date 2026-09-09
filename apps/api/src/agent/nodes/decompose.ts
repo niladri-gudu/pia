@@ -1,5 +1,6 @@
 import { createLLMFromEnv } from "@project-intelligence/ai";
 import { env } from "../../config/env";
+import { logger } from "../../lib/logger";
 import type { AgentState, RetrievalPlan } from "../state";
 import { invokeJson } from "../llm-json";
 
@@ -252,7 +253,7 @@ export async function decomposeNode(state: AgentState): Promise<Partial<AgentSta
 
   const trimmedPlans = plans.slice(0, 5);
 
-  console.log(
+  logger.debug(
     `[agent] Created ${trimmedPlans.length} retrieval plans: ${trimmedPlans
       .map((plan) => plan.strategy)
       .join(", ")}`,

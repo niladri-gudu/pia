@@ -1,6 +1,7 @@
 import { createEmbeddingProvider } from "../../indexing/embedding-provider";
 import { VectorRetriever } from "../../retrieval/retriever";
 import { retrieveActivity } from "./retrieve-activity";
+import { logger } from "../../lib/logger";
 import type { RetrievedChunk } from "../../retrieval/types";
 import type { AgentState, RetrievedEvidence } from "../state";
 import { resolveTemporalRange } from "../../retrieval/temporal";
@@ -106,7 +107,7 @@ export async function retrieveNode(state: AgentState): Promise<Partial<AgentStat
     }
   }
 
-  console.log(
+  logger.debug(
     `[agent] Retrieved ${retrievedChunks.length} unique chunks from ${plans.length} plans`,
   );
 

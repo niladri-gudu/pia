@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AgentState } from "../state";
 
 const { createLLMMock, invokeJsonMock } = vi.hoisted(() => ({
   createLLMMock: vi.fn(),
@@ -33,7 +34,7 @@ describe("decomposeNode", () => {
   });
 
   it("creates semantic retrieval plans", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse([
         {
           question: "Find the Redis caching implementation.",
@@ -73,7 +74,7 @@ describe("decomposeNode", () => {
   });
 
   it("creates activity plans with temporal constraints", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse([
         {
           question: "Find all PRs merged this quarter.",
@@ -117,7 +118,7 @@ describe("decomposeNode", () => {
   });
 
   it("accepts wrapped retrieval_plans responses", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse({
         retrieval_plans: [
           {
@@ -151,7 +152,7 @@ describe("decomposeNode", () => {
   });
 
   it("rejects activity plans without activity constraints", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse([
         {
           question: "Find recent project activity.",
@@ -173,12 +174,12 @@ describe("decomposeNode", () => {
         retrievalIteration: 0,
         context: "",
         answer: "",
-      } as any),
+      } as unknown as AgentState),
     ).rejects.toThrow('Retrieval plan 0 with strategy "activity" is missing activity_constraints.');
   });
 
   it("rejects invalid temporal ranges", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse([
         {
           question: "Find project activity.",
@@ -204,7 +205,7 @@ describe("decomposeNode", () => {
         retrievalIteration: 0,
         context: "",
         answer: "",
-      } as any),
+      } as unknown as AgentState),
     ).rejects.toThrow("Retrieval plan 0 has an invalid temporalRange");
   });
 });

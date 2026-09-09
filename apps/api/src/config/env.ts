@@ -31,6 +31,8 @@ const EnvSchema = z.object({
   EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
 
   EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(768),
+
+  EVALUATION_PROJECT_ID: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AgentState } from "../state";
 
 const { createLLMMock, invokeJsonMock } = vi.hoisted(() => ({
   createLLMMock: vi.fn(),
@@ -33,7 +34,7 @@ describe("refineNode", () => {
   });
 
   it("generates targeted semantic retrieval plans and increments the iteration", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse([
         {
           strategy: "semantic",
@@ -78,7 +79,7 @@ describe("refineNode", () => {
   });
 
   it("preserves activity constraints for refined activity plans", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse([
         {
           strategy: "activity",
@@ -132,7 +133,7 @@ describe("refineNode", () => {
   });
 
   it("rejects activity plans without activity constraints", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse([
         {
           strategy: "activity",
@@ -153,12 +154,12 @@ describe("refineNode", () => {
         retrievalIteration: 0,
         context: "",
         answer: "",
-      } as any),
+      } as unknown as AgentState),
     ).rejects.toThrow('Refined plan 0 with strategy "activity" is missing activity_constraints.');
   });
 
   it("rejects invalid retrieval strategies", async () => {
-    invokeJsonMock.mockImplementation(async ({ parse }: any) =>
+    invokeJsonMock.mockImplementation(async ({ parse }: { parse: (value: unknown) => unknown }) =>
       parse([
         {
           strategy: "database",
@@ -179,7 +180,7 @@ describe("refineNode", () => {
         retrievalIteration: 0,
         context: "",
         answer: "",
-      } as any),
+      } as unknown as AgentState),
     ).rejects.toThrow("Refined plan 0 has an invalid strategy.");
   });
 });

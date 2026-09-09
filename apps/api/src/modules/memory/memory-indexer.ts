@@ -1,6 +1,7 @@
 import type { EmbeddingProvider } from "@project-intelligence/ai";
 import prisma from "@project-intelligence/database";
 import { saveMemoryEmbedding } from "./memory.repository";
+import { logger } from "../../lib/logger";
 
 const BATCH_SIZE = 50;
 
@@ -55,7 +56,7 @@ export async function embedProjectMemories(
 
     processed += memories.length;
 
-    console.log(`[memory-indexer] Embedded ${memories.length} memories. Total: ${processed}`);
+    logger.debug(`[memory-indexer] Embedded ${memories.length} memories. Total: ${processed}`);
   }
 
   return processed;
