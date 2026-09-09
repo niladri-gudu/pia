@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.example
+docker/data
+.turbo
+.git
+.impeccable
+node_modules/.pnpm
