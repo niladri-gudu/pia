@@ -34,4 +34,5 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-# Design-agent working artifacts.impeccable/
+# Design-agent working artifacts
+.impeccable/
