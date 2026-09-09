@@ -6,6 +6,9 @@ import type { RetrievedChunk } from "../../retrieval/types";
 import type { AgentState, RetrievedEvidence } from "../state";
 import { resolveTemporalRange } from "../../retrieval/temporal";
 
+/** Upper bound on unique chunks handed to the generation step. */
+const MAX_TOTAL_CHUNKS = 50;
+
 export async function retrieveNode(state: AgentState): Promise<Partial<AgentState>> {
   const embeddingProvider = createEmbeddingProvider();
   const retriever = new VectorRetriever(embeddingProvider);
@@ -107,12 +110,20 @@ export async function retrieveNode(state: AgentState): Promise<Partial<AgentStat
     }
   }
 
+  // Keep the generation context bounded: many retrieval plans (especially
+  // exhaustive activity queries) would otherwise push hundreds of chunks
+  // into the prompt.
+  const cappedChunks = retrievedChunks.slice(0, MAX_TOTAL_CHUNKS);
+
   logger.debug(
-    `[agent] Retrieved ${retrievedChunks.length} unique chunks from ${plans.length} plans`,
+    `[agent] Retrieved ${retrievedChunks.length} unique chunks from ${plans.length} plans` +
+      (retrievedChunks.length > MAX_TOTAL_CHUNKS
+        ? ` (capped to ${MAX_TOTAL_CHUNKS})`
+        : ""),
   );
 
   return {
-    retrievedChunks,
+    retrievedChunks: cappedChunks,
     evidence: results,
   };
 }

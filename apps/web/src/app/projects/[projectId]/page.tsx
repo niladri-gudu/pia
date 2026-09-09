@@ -1,137 +1,95 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useProject, useProjectSyncStatus, useStartProjectSync } from "@/hooks/use-projects";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+
+import { ChatTab } from "@/components/workspace-tabs";
+import { ProjectHeader } from "@/components/project-header";
 import { ProjectChat } from "@/components/project-chat";
 import { ProjectSearch } from "@/components/project-search";
+import { ErrorState, LoadingSkeleton } from "@/components/states";
+import { useProject, useProjectSyncStatus, useStartProjectSync } from "@/hooks/use-projects";
+
+type WorkspaceTab = "chat" | "search";
 
 export default function ProjectPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
+
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("chat");
+
   const syncStatus = useProjectSyncStatus(projectId);
   const startSync = useStartProjectSync(projectId);
-
-  const { data: project, isLoading, isError, error } = useProject(projectId);
+  const { data: project, isLoading, isError } = useProject(projectId);
 
   if (isLoading) {
     return (
-      <main className="p-8">
-        <p className="text-sm text-muted-foreground">Loading project...</p>
-      </main>
-    );
-  }
-
-  if (isError) {
-    return (
-      <main className="p-8">
-        <p className="text-sm text-destructive">Failed to load project: {error.message}</p>
-      </main>
-    );
-  }
-
-  if (!project) {
-    return (
-      <main className="p-8">
-        <p className="text-sm text-muted-foreground">Project not found.</p>
-      </main>
-    );
-  }
-
-  const sync = project.latestSync;
-
-  return (
-    <main className="flex flex-1 flex-col gap-8 p-8">
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-
-          <Badge variant="secondary">{project.sourceType}</Badge>
+      <div className="flex min-h-dvh flex-col">
+        <div className="flex items-center gap-3 border-b px-4 py-2.5 sm:px-6">
+          <LoadingSkeleton className="size-7 rounded-lg" />
+          <LoadingSkeleton className="h-4 w-40" />
+          <div className="flex-1" />
+          <LoadingSkeleton className="h-7 w-24 rounded-full" />
         </div>
 
-        <p className="mt-2 text-muted-foreground">{project.externalId}</p>
+        <div className="flex-1 p-6">
+          <LoadingSkeleton className="mx-auto h-64 max-w-3xl" />
+        </div>
+      </div>
+    );
+  }
 
-        {project.sourceUrl && (
-          <a
-            href={project.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-1 inline-block text-sm text-primary hover:underline"
-          >
-            View repository →
-          </a>
-        )}
+  if (isError || !project) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          <ErrorState
+            title="We couldn't load this project's data right now"
+            description="It may not exist, or the service is unavailable. Please try again."
+            onRetry={() => window.location.reload()}
+          />
+        </div>
+      </div>
+    );
+  }
 
-        <div className="mt-4">
-          <Button
-            onClick={() => startSync.mutate()}
-            disabled={
-              startSync.isPending ||
-              syncStatus.data?.status === "RUNNING" ||
-              syncStatus.data?.status === "PENDING"
-            }
-          >
-            {startSync.isPending ||
-            syncStatus.data?.status === "RUNNING" ||
-            syncStatus.data?.status === "PENDING"
-              ? "Syncing..."
-              : "Sync Now"}
-          </Button>
+  return (
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <ProjectHeader
+        projectName={project.name}
+        externalId={project.externalId}
+        sourceUrl={project.sourceUrl}
+        latestSync={project.latestSync}
+        liveSync={syncStatus.data ?? null}
+        isSyncing={startSync.isPending}
+        onSync={() => startSync.mutate()}
+      />
 
-          {startSync.isError && (
-            <p className="mt-2 text-sm text-destructive">
-              Failed to start sync: {startSync.error.message}
-            </p>
+      {startSync.isError && (
+        <div className="px-4 pt-2 sm:px-6" role="status">
+          <ErrorState
+            title="Sync couldn't be started"
+            description="The project data may already be syncing. Please try again in a moment."
+            onRetry={() => startSync.reset()}
+          />
+        </div>
+      )}
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="border-b px-4 pt-2 sm:px-6">
+          <ChatTab activeTab={activeTab} onChange={setActiveTab} />
+        </div>
+
+        <div className="min-h-0 flex-1">
+          {activeTab === "chat" ? (
+            <ProjectChat projectId={projectId} />
+          ) : (
+            <div className="h-full overflow-y-auto">
+              <ProjectSearch projectId={projectId} />
+            </div>
           )}
         </div>
       </div>
-      <section className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Sync Status</CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            {syncStatus.data ? (
-              <Badge>{syncStatus.data.status}</Badge>
-            ) : sync ? (
-              <Badge>{sync.status}</Badge>
-            ) : (
-              <span className="text-sm text-muted-foreground">Never synced</span>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Records Processed</CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {syncStatus.data?.recordsProcessed ?? sync?.recordsProcessed ?? 0}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {sync?.completedAt ? new Date(sync.completedAt).toLocaleString() : "Never"}
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-      <div className="space-y-6">
-        <ProjectChat projectId={projectId} />
-        <ProjectSearch projectId={projectId} />
-      </div>{" "}
-    </main>
+    </div>
   );
 }

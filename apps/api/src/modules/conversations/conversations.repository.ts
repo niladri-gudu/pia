@@ -92,6 +92,7 @@ export async function findConversationMessages(conversationId: string) {
       role: true,
       content: true,
       sources: true,
+      memories: true,
       createdAt: true,
     },
   });
@@ -109,6 +110,10 @@ export async function createMessage(input: {
     url: string | null;
     similarity: number;
   }>;
+  memories?: Array<{
+    type: string;
+    content: string;
+  }>;
 }) {
   return prisma.message.create({
     data: {
@@ -116,12 +121,14 @@ export async function createMessage(input: {
       role: input.role,
       content: input.content,
       sources: input.sources,
+      memories: input.memories,
     },
     select: {
       id: true,
       role: true,
       content: true,
       sources: true,
+      memories: true,
       createdAt: true,
     },
   });

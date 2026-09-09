@@ -13,6 +13,7 @@ import { enqueueGithubSyncJob, enqueueEmbeddingIndexJob } from "../../workers/qu
 import { createEmbeddingProvider } from "../../indexing/embedding-provider";
 import { VectorRetriever } from "../../retrieval/retriever";
 import { agentGraph } from "../../agent/graph";
+import { collectAnswerSources } from "../../agent/citations";
 
 /** User-safe message shown whenever a sync job previously failed. */
 const SYNC_FAILED_MESSAGE = "The last synchronization failed. You can try syncing again.";
@@ -216,10 +217,6 @@ export async function runProjectAgentQuery(projectId: string, query: string) {
     },
     query,
     answer: result.answer,
-    sources: result.retrievedChunks.map((chunk) => ({
-      title: chunk.title,
-      url: chunk.url,
-      similarity: chunk.similarity,
-    })),
+    sources: collectAnswerSources(result.answer, result.retrievedChunks),
   };
 }

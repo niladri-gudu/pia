@@ -23,24 +23,26 @@ describe("inputGuardrailNode", () => {
 });
 
 describe("outputGuardrailNode", () => {
-  it("rejects an empty answer", () => {
-    expect(() =>
-      outputGuardrailNode({
-        answer: "   ",
-        retrievedChunks: [],
-        evidenceSufficient: true,
-      } as unknown as AgentState),
-    ).toThrow("Generated answer cannot be empty.");
+  const FALLBACK_SNIPPET = "could not verify";
+
+  it("replaces an empty answer with the fallback response", () => {
+    const result = outputGuardrailNode({
+      answer: "   ",
+      retrievedChunks: [],
+      evidenceSufficient: true,
+    } as unknown as AgentState);
+
+    expect(result.answer).toContain(FALLBACK_SNIPPET);
   });
 
-  it("rejects invalid source references", () => {
-    expect(() =>
-      outputGuardrailNode({
-        answer: "React uses this architecture. [Source 99]",
-        retrievedChunks: [{}, {}, {}],
-        evidenceSufficient: true,
-      } as unknown as AgentState),
-    ).toThrow("Generated answer contains invalid source reference: [Source 99].");
+  it("replaces answers with invalid source references", () => {
+    const result = outputGuardrailNode({
+      answer: "React uses this architecture. [Source 99]",
+      retrievedChunks: [{}, {}, {}],
+      evidenceSufficient: true,
+    } as unknown as AgentState);
+
+    expect(result.answer).toContain(FALLBACK_SNIPPET);
   });
 
   it("accepts valid source references", () => {
@@ -53,14 +55,14 @@ describe("outputGuardrailNode", () => {
     expect(result.answer).toBe("React uses this architecture. [Source 2]");
   });
 
-  it("rejects unsupported answers that do not acknowledge uncertainty", () => {
-    expect(() =>
-      outputGuardrailNode({
-        answer: "I am certain the CEO uses Rust.",
-        retrievedChunks: [],
-        evidenceSufficient: false,
-      } as unknown as AgentState),
-    ).toThrow("Generated answer does not acknowledge insufficient evidence.");
+  it("replaces unsupported answers that do not acknowledge uncertainty", () => {
+    const result = outputGuardrailNode({
+      answer: "I am certain the CEO uses Rust.",
+      retrievedChunks: [],
+      evidenceSufficient: false,
+    } as unknown as AgentState);
+
+    expect(result.answer).toContain(FALLBACK_SNIPPET);
   });
 
   it("accepts an answer that acknowledges insufficient evidence", () => {

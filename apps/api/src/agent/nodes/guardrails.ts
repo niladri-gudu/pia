@@ -1,4 +1,16 @@
 import type { AgentState } from "../state";
+import { logger } from "../../lib/logger";
+
+/**
+ * Safe response used when the generated answer fails the output guardrail.
+ * Failing the whole request here would waste a completed retrieval run and
+ * surface an internal error to the user, so a failed answer is replaced
+ * with an honest "cannot verify" response instead.
+ */
+const INSUFFICIENT_EVIDENCE_FALLBACK =
+  "I could not verify the answer to this question from the available project context, " +
+  "so I won't speculate. Try rephrasing the question, or ask about something covered by " +
+  "the project's issues, pull requests or commits.";
 
 /**
  * Validates the incoming agent query before retrieval begins.
@@ -21,12 +33,21 @@ export function inputGuardrailNode(state: AgentState): Partial<AgentState> {
 
 /**
  * Validates the generated answer against the available agent context.
+ *
+ * Instead of failing the run, a non-conforming answer is replaced with the
+ * safe insufficient-evidence fallback so the conversation always receives
+ * an honest, grounded response.
  */
 export function outputGuardrailNode(state: AgentState): Partial<AgentState> {
   const answer = state.answer.trim();
 
   if (!answer) {
-    throw new Error("Generated answer cannot be empty.");
+    logger.warn("[agent] Output guardrail: empty answer, using fallback response");
+
+    return {
+      answer: INSUFFICIENT_EVIDENCE_FALLBACK,
+      context: state.context,
+    };
   }
 
   const sourceCount = state.retrievedChunks.length;
@@ -37,9 +58,14 @@ export function outputGuardrailNode(state: AgentState): Partial<AgentState> {
     const sourceNumber = Number(match[1]);
 
     if (sourceNumber < 1 || sourceNumber > sourceCount) {
-      throw new Error(
-        `Generated answer contains invalid source reference: [Source ${sourceNumber}].`,
+      logger.warn(
+        `[agent] Output guardrail: invalid source reference [Source ${sourceNumber}], using fallback response`,
       );
+
+      return {
+        answer: INSUFFICIENT_EVIDENCE_FALLBACK,
+        context: state.context,
+      };
     }
   }
 
@@ -52,10 +78,17 @@ export function outputGuardrailNode(state: AgentState): Partial<AgentState> {
       lowerAnswer.includes("cannot be verified") ||
       lowerAnswer.includes("not available") ||
       lowerAnswer.includes("insufficient evidence") ||
-      lowerAnswer.includes("unable to verify");
+      lowerAnswer.includes("unable to verify") ||
+      lowerAnswer.includes("won't speculate") ||
+      lowerAnswer.includes("not covered by");
 
     if (!acknowledgesUncertainty) {
-      throw new Error("Generated answer does not acknowledge insufficient evidence.");
+      logger.warn("[agent] Output guardrail: answer does not acknowledge insufficient evidence");
+
+      return {
+        answer: INSUFFICIENT_EVIDENCE_FALLBACK,
+        context: state.context,
+      };
     }
   }
 

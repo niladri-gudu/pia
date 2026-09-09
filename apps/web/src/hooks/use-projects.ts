@@ -101,8 +101,11 @@ export function useSendConversationMessage(conversationId: string | null) {
         return;
       }
 
+      // Invalidating the "conversations" prefix refreshes both this
+      // conversation's messages and the sidebar list (auto titles update
+      // on the first exchange).
       void queryClient.invalidateQueries({
-        queryKey: ["conversations", conversationId, "messages"],
+        queryKey: ["conversations"],
       });
     },
   });

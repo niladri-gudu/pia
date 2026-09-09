@@ -1,47 +1,75 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
+
 import { ProjectCard } from "@/components/project-card";
+import { EmptyState, ErrorState, LoadingSkeleton } from "@/components/states";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useProjects } from "@/hooks/use-projects";
 
 export default function Home() {
-  const { data: projects, isLoading, isError, error } = useProjects();
+  const { data: projects, isLoading, isError, refetch } = useProjects();
 
   return (
-    <main className="flex flex-1 flex-col gap-8 p-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Project Intelligence Agent</h1>
+    <div className="flex min-h-dvh flex-col">
+      <header className="flex items-center justify-between border-b px-6 py-3 sm:px-8">
+        <div className="flex items-center gap-2.5">
+          <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground">
+            <Sparkles className="size-4" aria-hidden />
+          </span>
 
-        <p className="mt-2 text-muted-foreground">
-          Agentic research over live engineering and project data.
-        </p>
-      </div>
+          <div>
+            <p className="text-sm font-semibold tracking-tight">Project Intelligence Agent</p>
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold">Projects</h2>
-          <p className="text-sm text-muted-foreground">
-            Select a project to explore its engineering data.
-          </p>
+            <p className="text-xs text-muted-foreground">
+              Agentic research over live engineering data
+            </p>
+          </div>
         </div>
 
-        {isLoading && <p className="text-sm text-muted-foreground">Loading projects...</p>}
+        <ThemeToggle />
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10 sm:px-8">
+        <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
+
+        <p className="mt-1 text-muted-foreground">
+          Select a project to ask questions about its code, issues and activity.
+        </p>
+
+        {isLoading && (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <LoadingSkeleton className="h-32" />
+            <LoadingSkeleton className="h-32" />
+            <LoadingSkeleton className="h-32" />
+          </div>
+        )}
 
         {isError && (
-          <p className="text-sm text-destructive">Failed to load projects: {error.message}</p>
+          <ErrorState
+            title="We couldn't load your projects right now"
+            description="Please try again."
+            onRetry={() => void refetch()}
+            className="mt-8"
+          />
         )}
 
         {!isLoading && !isError && projects?.length === 0 && (
-          <p className="text-sm text-muted-foreground">No projects found.</p>
+          <EmptyState
+            title="No projects yet"
+            description="Sync a GitHub repository to create your first project."
+            className="mt-8 rounded-xl border border-dashed"
+          />
         )}
 
         {!isLoading && !isError && projects && projects.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}
           </div>
         )}
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }

@@ -43,6 +43,8 @@ export interface SearchResult {
   content: string;
   url: string | null;
   similarity: number;
+  activityAt?: string;
+  activityDateField?: "occurredAt" | "mergedAt";
 }
 
 export interface ProjectSearchResponse {
@@ -68,11 +70,17 @@ export interface ConversationSource {
   similarity: number;
 }
 
+export interface ConversationMemory {
+  type: string;
+  content: string;
+}
+
 export interface ConversationMessage {
   id: string;
   role: "USER" | "ASSISTANT";
   content: string;
   sources: ConversationSource[] | null;
+  memories: ConversationMemory[] | null;
   createdAt: string;
 }
 

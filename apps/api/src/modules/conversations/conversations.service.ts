@@ -1,4 +1,5 @@
 import { agentGraph } from "../../agent/graph";
+import { collectAnswerSources } from "../../agent/citations";
 import { AppError } from "../../middleware/errorHandler";
 import { extractMemories } from "../../agent/memory-extractor";
 import { addProjectMemory } from "../memory/memory.service";
@@ -81,17 +82,17 @@ export async function sendConversationMessage(input: { conversationId: string; c
     conversationHistory,
   });
 
-  const sources = result.retrievedChunks.map((chunk) => ({
-    title: chunk.title,
-    url: chunk.url ?? null,
-    similarity: chunk.similarity,
-  }));
+  const sources = collectAnswerSources(result.answer, result.retrievedChunks);
 
   const assistantMessage = await createMessage({
     conversationId: input.conversationId,
     role: "ASSISTANT",
     content: result.answer,
     sources,
+    memories: (result.memories ?? []).map((memory) => ({
+      type: memory.type,
+      content: memory.content,
+    })),
   });
 
   // Memory extraction happens after the answer has been persisted, so a
