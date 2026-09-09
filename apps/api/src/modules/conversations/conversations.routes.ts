@@ -1,10 +1,20 @@
 import { Router, type IRouter } from "express";
+import { z } from "zod";
 import {
   getProjectConversations,
   getConversationMessages,
   sendConversationMessage,
   startConversation,
 } from "./conversations.service";
+
+const createConversationSchema = z.object({
+  projectId: z.string().min(1),
+  title: z.string().max(200).optional(),
+});
+
+const sendMessageSchema = z.object({
+  content: z.string().trim().min(1).max(4000),
+});
 
 export const conversationsRouter: IRouter = Router();
 
@@ -15,21 +25,16 @@ export const conversationsRouter: IRouter = Router();
  */
 conversationsRouter.post("/", async (req, res, next) => {
   try {
-    const { projectId, title } = req.body as {
-      projectId?: string;
-      title?: string;
-    };
+    const parsed = createConversationSchema.safeParse(req.body);
 
-    if (!projectId) {
+    if (!parsed.success) {
       return res.status(400).json({
-        error: "projectId is required",
+        error: "Invalid request payload",
+        issues: parsed.error.flatten().fieldErrors,
       });
     }
 
-    const conversation = await startConversation({
-      projectId,
-      title,
-    });
+    const conversation = await startConversation(parsed.data);
 
     res.status(201).json(conversation);
   } catch (error) {
@@ -78,19 +83,18 @@ conversationsRouter.get("/:id/messages", async (req, res, next) => {
  */
 conversationsRouter.post("/:id/messages", async (req, res, next) => {
   try {
-    const { content } = req.body as {
-      content?: string;
-    };
+    const parsed = sendMessageSchema.safeParse(req.body);
 
-    if (!content?.trim()) {
+    if (!parsed.success) {
       return res.status(400).json({
-        error: "content is required",
+        error: "Invalid request payload",
+        issues: parsed.error.flatten().fieldErrors,
       });
     }
 
     const result = await sendConversationMessage({
       conversationId: req.params.id,
-      content: content.trim(),
+      content: parsed.data.content,
     });
 
     res.status(201).json(result);

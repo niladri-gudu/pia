@@ -149,6 +149,9 @@ export async function triggerProjectIndexing(projectId: string) {
   };
 }
 
+/** Maximum accepted length for a search or agent query. */
+const MAX_QUERY_LENGTH = 4000;
+
 /**
  * Validate that a project exists and is a GitHub project before running
  * retrieval or agent queries against it.
@@ -167,13 +170,21 @@ async function requireGithubProject(projectId: string) {
   return project;
 }
 
+function requireValidQuery(query: string) {
+  if (!query.trim()) {
+    throw new AppError(400, "Query parameter 'q' is required");
+  }
+
+  if (query.length > MAX_QUERY_LENGTH) {
+    throw new AppError(400, "Query is too long. Maximum length is 4000 characters.");
+  }
+}
+
 /**
  * Run a semantic search over a project's indexed document chunks.
  */
 export async function searchProjectDocuments(projectId: string, query: string) {
-  if (!query.trim()) {
-    throw new AppError(400, "Query parameter 'q' is required");
-  }
+  requireValidQuery(query);
 
   const project = await requireGithubProject(projectId);
 
@@ -199,9 +210,7 @@ export async function searchProjectDocuments(projectId: string, query: string) {
  * Run a one-shot agent query for a project.
  */
 export async function runProjectAgentQuery(projectId: string, query: string) {
-  if (!query.trim()) {
-    throw new AppError(400, "Query parameter 'q' is required");
-  }
+  requireValidQuery(query);
 
   const project = await requireGithubProject(projectId);
 

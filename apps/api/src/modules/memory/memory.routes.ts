@@ -1,7 +1,13 @@
 import { Router, type IRouter } from "express";
+import { z } from "zod";
 import { addProjectMemory, getProjectMemories } from "./memory.service";
 import { createEmbeddingProvider } from "../../indexing/embedding-provider";
 import { embedProjectMemories } from "./memory-indexer";
+
+const createMemorySchema = z.object({
+  type: z.enum(["FACT", "PREFERENCE", "DECISION", "CONTEXT"]),
+  content: z.string().trim().min(1).max(2000),
+});
 
 export const memoryRouter: IRouter = Router();
 
@@ -29,27 +35,18 @@ memoryRouter.get("/project/:projectId", async (req, res, next) => {
  */
 memoryRouter.post("/project/:projectId", async (req, res, next) => {
   try {
-    const { type, content } = req.body as {
-      type?: "FACT" | "PREFERENCE" | "DECISION" | "CONTEXT";
-      content?: string;
-    };
+    const parsed = createMemorySchema.safeParse(req.body);
 
-    if (!type) {
+    if (!parsed.success) {
       return res.status(400).json({
-        error: "type is required",
-      });
-    }
-
-    if (!content?.trim()) {
-      return res.status(400).json({
-        error: "content is required",
+        error: "Invalid request payload",
+        issues: parsed.error.flatten().fieldErrors,
       });
     }
 
     const memory = await addProjectMemory({
       projectId: req.params.projectId,
-      type,
-      content: content.trim(),
+      ...parsed.data,
     });
 
     res.status(201).json(memory);
